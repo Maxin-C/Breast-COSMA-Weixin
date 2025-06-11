@@ -1,0 +1,29 @@
+<view class="container">
+  <camera
+    wx:if="{{isRecording}}"
+    device-position="front"
+    flash="off"
+    binderror="error"
+    class="camera-view"
+  >
+    <cover-view class="cover-container" bindtap="stopTraining">
+      
+      <cover-view class="label-display">{{actionLabel}}</cover-view>
+      
+      <cover-view class="loading-wrapper" wx:if="{{isBusy}}">
+        <loading class="loading-icon" color="#FFFFFF" size="60rpx"></loading>
+      </cover-view>
+
+      <cover-view class="stop-prompt">点击任意位置停止</cover-view>
+
+    </cover-view>
+  </camera>
+
+  <view wx:else class="initial-view">
+    <view class="start-button" bindtap="startTraining">
+      <text>开始训练</text>
+    </view>
+    <view class="initial-tip">点击按钮开始AI动作识别</view>
+  </view>
+
+</view>
