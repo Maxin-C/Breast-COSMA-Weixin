@@ -61,7 +61,7 @@ Page({
     const that = this;
     const cameraContext = this.data.cameraContext;
     const totalFrames = 8;
-    const duration = 1500;
+    const duration = 2000;
     const frameInterval = duration / totalFrames;
     let capturedFrames = [];
     let lastCaptureTime = 0;
@@ -98,7 +98,7 @@ Page({
             height: frame.height,
         };
         capturedFrames.push(frameCopy);
-        that.setData({ actionLabel: `正在采样 (${capturedFrames.length}/${totalFrames})` });
+        // that.setData({ actionLabel: `正在采样 (${capturedFrames.length}/${totalFrames})` });
       }
     });
 
@@ -147,21 +147,15 @@ Page({
         const frame = frames[i]; // 这是内存中的原始大尺寸帧
 
         // 步骤A: 将原始帧数据绘制到压缩Canvas上
-        const clampedArray = new Uint8ClampedArray(frame.data);
-      
-        // 2. 创建合法的ImageData对象
-        const imageData = {
-          data: clampedArray,
-          width: frame.width,
-          height: frame.height
-        };
-        
-        // 3. 设置压缩Canvas尺寸
         compressionCanvas.width = frame.width;
         compressionCanvas.height = frame.height;
-        
-        // 4. 放入正确的图像数据
-        compressionContext.putImageData(imageData, 0, 0);
+
+        // 1. 创建 ImageData 对象
+        const imgDataObj = compressionContext.createImageData(frame.width, frame.height);
+        // 2. 赋值像素
+        imgDataObj.data.set(new Uint8ClampedArray(frame.data));
+        // 3. 绘制到 canvas
+        compressionContext.putImageData(imgDataObj, 0, 0);
 
         // 步骤B: 从压缩Canvas生成一个压缩后的小尺寸临时文件
         const compressedPath = await new Promise((resolve, reject) => {
