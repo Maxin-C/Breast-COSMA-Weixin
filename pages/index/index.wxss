@@ -1,8 +1,15 @@
 /* index.wxss */
-.container {
-  width: 100vw;
+.page-container {
+  display: flex;
+  flex-direction: column;
   height: 100vh;
+  background-color: #f0f0f0;
+}
+
+.camera-wrapper {
   position: relative;
+  flex: 1;
+  width: 100%;
 }
 
 .camera-view {
@@ -10,85 +17,41 @@
   height: 100%;
 }
 
-.cover-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding: 80rpx 0;
-  box-sizing: border-box;
-}
-
-.label-display {
-  background-color: rgba(0, 0, 0, 0.5);
-  color: #ffffff;
-  padding: 10rpx 30rpx;
-  border-radius: 30rpx;
-  font-size: 32rpx;
-}
-
-/* 优化点：加载动画的容器 */
-.loading-wrapper {
+.status-overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: rgba(0, 0, 0, 0.6);
-  padding: 40rpx;
-  border-radius: 20rpx;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20rpx;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-/* 微信小程序内置的loading组件大小不好直接控制，
-   但可以通过调整容器和使用 transform 来微调 */
-.loading-icon {
-  /* 你可以根据需要调整 loading 组件的 size 属性 */
-}
-
-/* 优化点：停止提示的样式 */
-.stop-prompt {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 28rpx;
-  background-color: rgba(0, 0, 0, 0.3);
-  padding: 8rpx 20rpx;
-  border-radius: 20rpx;
-}
-
-/* 未开始训练时的界面 */
-.initial-view {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: #333;
-}
-
-.start-button {
-  width: 300rpx;
-  height: 300rpx;
-  border-radius: 50%;
-  background-color: #07c160;
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 48rpx;
+.action-label {
+  color: #ffffff;
+  font-size: 32rpx;
   font-weight: bold;
-  box-shadow: 0 4px 12px rgba(7, 193, 96, 0.4);
-  margin-bottom: 40rpx;
-}
-.start-button:active {
-  background-color: #06ad56;
 }
 
-.initial-tip {
-  color: #ccc;
-  font-size: 28rpx;
+.controls-container {
+  padding: 40rpx;
+  background-color: #ffffff;
+  border-top: 1rpx solid #e0e0e0;
+}
+
+.active-controls {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.btn-control {
+  width: 45%;
+  margin: 0;
+}
+
+.btn-start {
+  width: 100%;
 }

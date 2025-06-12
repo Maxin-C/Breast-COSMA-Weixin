@@ -1,30 +1,35 @@
-<view class="container">
-  <camera
-    wx:if="{{isRecording}}"
-    device-position="front"
-    flash="off"
-    binderror="error"
-    class="camera-view"
-    resolution="low"
-  >
-    <cover-view class="cover-container" bindtap="stopTraining">
-      
-      <cover-view class="label-display">{{actionLabel}}</cover-view>
-      
-      <cover-view class="loading-wrapper" wx:if="{{isBusy}}">
-        <loading class="loading-icon" color="#FFFFFF" size="60rpx"></loading>
-      </cover-view>
-
-      <cover-view class="stop-prompt">点击任意位置停止</cover-view>
-
-    </cover-view>
-  </camera>
-
-  <view wx:else class="initial-view">
-    <view class="start-button" bindtap="startTraining">
-      <text>开始训练</text>
+<view class="page-container">
+  <navigation-bar title="动作采集"></navigation-bar>
+  
+  <view class="camera-wrapper">
+    <camera class="camera-view" device-position="front" flash="off"></camera>
+    <view class="status-overlay">
+      <text class="action-label">{{actionLabel}}</text>
     </view>
-    <view class="initial-tip">点击按钮开始AI动作识别</view>
   </view>
-
+  
+  <view class="controls-container">
+    <button
+      wx:if="{{!isRecording}}"
+      class="btn-control btn-start"
+      type="primary"
+      bindtap="startTraining">
+      开始训练
+    </button>
+    
+    <view wx:if="{{isRecording}}" class="active-controls">
+      <button
+        class="btn-control btn-pause"
+        type="default"
+        bindtap="handlePauseToggle">
+        {{ isPaused ? '继续' : '暂停' }}
+      </button>
+      <button
+        class="btn-control btn-terminate"
+        type="warn"
+        bindtap="handleTerminate">
+        终止
+      </button>
+    </view>
+  </view>
 </view>
