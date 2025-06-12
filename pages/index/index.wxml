@@ -5,6 +5,7 @@
     flash="off"
     binderror="error"
     class="camera-view"
+    resolution="low"
   >
     <cover-view class="cover-container" bindtap="stopTraining">
       
