@@ -1,0 +1,28 @@
+<view class="chat-container">
+  <view class="nav-bar">
+    <image class="nav-back-icon" src="../../components/images/back-arrow.svg" mode="aspectFit" bind:tap="handleHome"></image>
+    <view class="nav-contact">
+      <image class="nav-avatar" src="../../components/images/dr-cosma.png"></image>
+      <view class="nav-contact-info">
+        <text class="nav-name">COSMA康复小助手</text>
+        <text class="nav-status">在线</text>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="chat-body" scroll-y="true" scroll-top="{{scrollTop}}" style="position: relative; left: 0rpx; top: 164rpx; height: 1310rpx; display: block; box-sizing: border-box">
+    <view class="time-tag">今日 {{currentTime}}</view>
+    <block wx:for="{{messages}}" wx:key="message_id">
+      <view id="msg-{{item.message_id}}" class="message-item {{item.sender_type === 'user' ? 'sent' : 'received'}}">
+        <view class="message-bubble">
+          <text class="message-content">{{item.message_text}}</text>
+        </view>
+      </view>
+    </block>
+  </scroll-view>
+
+  <view class="input-bar">
+    <input class="input-field" placeholder="请在这里输入您的问题..." value="{{inputValue}}" bindinput="handleInput"  adjust-position="{{true}}"/>
+    <image class="send-icon" src="../../components/images/send-plane.svg" mode="aspectFit" bindtap="handleSend"></image>
+  </view>
+</view>

@@ -1,0 +1,59 @@
+<view class="container">
+
+<view class="illustration-container">
+  <image class="illustration-image" src="../../components/images/welcome-icon.png" mode="aspectFit"></image>
+</view>
+
+<view class="text-section">
+  <text class="title">欢迎使用</text>
+  <text class="subtitle">乳腺癌术后康复助手</text>
+</view>
+
+<view class="input-group">
+  <text class="input-label">姓名 *</text>
+  <view class="input-box">
+    <input
+      class="input-field"
+      type="text"
+      placeholder="张三"
+      placeholder-style="color: #999;"
+      bindinput="handleNameInput"
+    />
+  </view>
+</view>
+
+<view class="input-group">
+  <text class="input-label">手机号 *</text>
+  <view class="input-box">
+    <input
+      class="input-field"
+      type="number"
+      placeholder="12366668888"
+      placeholder-style="color: #999;"
+      bindinput="handlePhoneNumInput"
+    />
+  </view>
+</view>
+
+<view class="input-group">
+  <text class="input-label">病例号 *</text>
+  <view class="input-box">
+    <input
+      class="input-field"
+      type="number"
+      placeholder="123456"
+      placeholder-style="color: #999;"
+      bindinput="handleSrrshIdInput"
+    />
+  </view>
+</view>
+
+<view class="button-container">
+  <button class="signup-btn" bindtap="handleSignUp">注册</button>
+</view>
+
+<view class="login-section">
+  <text class="new-member-text">已经注册账户?</text>
+  <text class="login-link" bindtap="handleLogin">点击登录</text>
+</view>
+</view>

@@ -1,0 +1,204 @@
+/* pages/progress/progress.wxss */
+page {
+  background-color: #F8F9FA;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #333;
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* 1. 自定义导航栏 */
+.nav-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 标题居中 */
+  padding-top: env(safe-area-inset-top);
+  height: 80px;
+  background-color: #EBF0E6;
+}
+.nav-back-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  padding-top: env(safe-area-inset-top);
+  margin-top: 15px;
+}
+.nav-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-top: 35px;
+}
+
+/* 2. 可滚动内容区 */
+.content-scroll {
+  margin-top: 20px;
+  flex: 1;
+  padding: 0 15px;
+  padding-top: calc(44px + env(safe-area-inset-top));
+  padding-bottom: calc(70px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.session-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #555;
+  margin: 20px 0;
+}
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #52C41A;
+  margin-left: 8px;
+}
+
+/* 通用卡片样式 */
+.card {
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* 日历 */
+.calendar {
+  margin-bottom: 10px;
+  margin-left: -20px;
+}
+
+.calendar-custom-class {
+  transform: scale(0.9);
+}
+
+
+/* 统计区块 */
+.stats-grid {
+  overflow: hidden; /* 清除浮动 */
+  margin-bottom: 25px;
+}
+
+.stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+.stats-grid .stat-item {
+  width: calc(50% - 7.5px); /* 减去一半的间距 */
+  margin-bottom: 15px;
+  box-sizing: border-box; /* 确保padding和border不增加宽度 */
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: #f8f8f8; /* 可选背景色 */
+  border-radius: 8px; /* 可选圆角 */
+}
+
+/* 高亮项的特殊样式 */
+.stats-grid .stat-item.highlight {
+  background: #DCE6D0; /* 示例高亮颜色 */
+}
+
+.stat-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* 恢复旅程图表 */
+.chart-card {
+  background-color: #ECECEC;
+  border-radius: 16px;
+  padding: 20px;
+}
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+}
+.chart-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+.bar-chart {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 120px;
+}
+.bar-item {
+  width: 7%;
+  background-color: #C9D8BC;
+  border-radius: 4px 4px 0 0;
+}
+
+/* 3. 自定义底部导航 */
+.custom-tab-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-around;
+  height: 100px;
+  background-color: #EBF0E6;
+  padding-top: 8px;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 16px;
+  color: #888;
+}
+.tab-item.active {
+  color: #333;
+}
+.tab-icon {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 4px;
+}

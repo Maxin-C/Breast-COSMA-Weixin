@@ -1,0 +1,146 @@
+/* pages/chat/chat.wxss */
+page {
+  background-color: #F7F7F7;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* This makes the container fill the full viewport height */
+}
+
+/* 1. 自定义导航栏样式 */
+.nav-bar {
+  position: fixed; /* Fixed to the top */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  padding: 40px 15px 10px; /* 适配不同机型顶部安全距离 */
+  background-color: #E0E8D7;
+  box-sizing: content-box; /* Padding adds to total height */
+}
+
+.nav-back-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.nav-contact {
+  display: flex;
+  align-items: center;
+}
+
+.nav-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.nav-contact-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.nav-status {
+  font-size: 12px;
+  color: #6A8B51;
+}
+
+/* 2. 聊天内容区样式 */
+.chat-body {
+  /* flex: 1; This is key: it makes the scroll-view take up all remaining vertical space */
+  height: 800px; /* Space for the fixed input-bar */
+  padding-bottom: 20px;
+  box-sizing: border-box; /* Crucial so padding is included in the flex item's height calculation */
+  position: relative; left: 0rpx; top: 164rpx; height: 1310rpx; display: block; box-sizing: border-box
+}
+
+.time-tag {
+  text-align: center;
+  font-size: 12px;
+  color: #AAAAAA;
+  margin: 20px 0;
+}
+
+.message-item {
+  display: flex;
+  margin: 0 15px 15px;
+}
+
+/* 对方消息 (左对齐) */
+.message-item.received {
+  justify-content: flex-start;
+}
+.message-item.received .message-bubble {
+  background-color: #E0E8D7;
+  border-radius: 18px 18px 18px 5px;
+}
+
+/* 我的消息 (右对齐) */
+.message-item.sent {
+  justify-content: flex-end;
+}
+.message-item.sent .message-bubble {
+  background-color: #E0E0E0;
+  border-radius: 18px 18px 5px 18px;
+}
+
+.message-bubble {
+  display: inline-flex;
+  align-items: flex-end; /* 让时间戳和内容底对齐 */
+  padding: 10px 15px;
+  max-width: 75%;
+}
+
+.message-content {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+  word-break: break-all; /* 英文长单词换行 */
+}
+
+.message-time {
+  font-size: 11px;
+  color: #888;
+  margin-left: 5px;
+  white-space: nowrap; /* 防止时间换行 */
+}
+
+/* 3. 底部输入栏样式 */
+.input-bar {
+  position: fixed; /* Fixed to the bottom */
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #ffffff;
+  padding-bottom: env(safe-area-inset-bottom); /* 适配 iPhone X 等底部安全区域 */
+}
+
+.input-field {
+  flex: 1;
+  background-color: #F0F2EF;
+  border-radius: 20px;
+  padding: 8px 15px;
+  font-size: 15px;
+  margin-right: 10px;
+}
+
+.send-icon {
+  width: 28px;
+  height: 28px;
+}

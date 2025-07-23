@@ -1,0 +1,45 @@
+<view class="container">
+  <view class="logo-container">
+    <image class="logo-image" src="../../components/images/login-icon.png" mode="aspectFit"></image>
+  </view>
+
+  <view class="text-section">
+    <text class="title">乳腺癌术后智能康复助手</text>
+    <text class="slogan">浙江大学邵逸夫医院 x 浙江大学生仪学院</text>
+  </view>
+
+  <view class="input-group">
+    <text class="input-label">用户名 *</text>
+    <view class="input-box">
+      <input
+        class="input-field"
+        type="text"
+        placeholder="张三"
+        placeholder-style="color: #999;"
+        bindinput="handleUsernameInput"
+      />
+    </view>
+  </view>
+
+  <view class="input-group">
+    <text class="input-label">手机号 *</text>
+    <view class="input-box">
+      <input
+        class="input-field"
+        type="text"
+        placeholder="12366668888"
+        placeholder-style="color: #999;"
+        bindinput="handlePhoneNumInput"
+      />
+    </view>
+  </view>
+
+  <view class="button-container">
+    <button class="login-btn" bindtap="handleLogin">登录</button>
+  </view>
+
+  <view class="signup-section">
+    <text class="new-member-text">第一次加入项目?</text>
+    <text class="signup-link" bindtap="handleSignUp">点击注册</text>
+  </view>
+</view>

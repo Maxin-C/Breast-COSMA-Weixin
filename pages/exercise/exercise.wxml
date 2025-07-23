@@ -1,0 +1,38 @@
+<view class="page-container">
+  <view class="nav-bar">
+    <image class="nav-back-icon" src="../../components/images/back-arrow.svg" mode="aspectFit"  bind:tap="handleHome"></image>
+    <view class="nav-title">康复锻炼</view>
+  </view>
+  
+  <view class="camera-wrapper">
+    <camera class="camera-view" device-position="front" flash="off"></camera>
+    <view class="status-overlay">
+      <text class="action-label">{{actionLabel}}</text>
+    </view>
+  </view>
+  
+  <view class="controls-container">
+    <button
+      wx:if="{{!isRecording}}"
+      class="btn-control btn-start"
+      type="primary"
+      bindtap="startTraining">
+      开始训练
+    </button>
+    
+    <view wx:if="{{isRecording}}" class="active-controls">
+      <button
+        class="btn-control btn-pause"
+        type="default"
+        bindtap="handlePauseToggle">
+        {{ isPaused ? '继续' : '暂停' }}
+      </button>
+      <button
+        class="btn-control btn-terminate"
+        type="warn"
+        bindtap="handleTerminate">
+        终止
+      </button>
+    </view>
+  </view>
+</view>

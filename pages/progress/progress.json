@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "calendar": "@lspriv/wx-calendar"
+  },
+  "navigationStyle": "custom",
+  "backgroundColor": "#F8F9FA"
+}

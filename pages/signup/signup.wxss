@@ -1,0 +1,133 @@
+/* welcome.wxss */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 60rpx;
+  box-sizing: border-box;
+  background-color: #f7f7f7;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Illustration */
+.illustration-container {
+  width: 500rpx;
+  height: 500rpx;
+  margin-top: -100rpx;
+}
+
+.illustration-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* Text section */
+.text-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.title {
+  font-size: 40rpx;
+  color: #333333;
+  font-weight: normal;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 64rpx;
+  color: #000000;
+  font-weight: bold;
+  line-height: 1.2;
+  margin-bottom: 50rpx;
+}
+
+.slogan {
+  font-size: 28rpx;
+  color: #666666;
+  margin-top: 20rpx;
+}
+
+/* Button */
+/* Input groups */
+.input-group {
+  width: 100%;
+  margin-bottom: 50rpx;
+}
+
+.input-label {
+  font-size: 28rpx;
+  color: #333333;
+  margin-left: 2px;
+  margin-bottom: 15rpx;
+  display: block;
+  font-weight: bold;
+}
+
+.input-box {
+  display: flex;
+  align-items: center;
+  background-color: #ececec;
+  border-radius: 12rpx;
+  padding: 0 30rpx;
+  height: 100rpx;
+  position: relative;
+}
+
+.input-field {
+  flex: 1;
+  height: 100%;
+  font-size: 32rpx;
+  color: #000;
+}
+
+.icon {
+  width: 40rpx;
+  height: 40rpx;
+  position: absolute;
+  right: 30rpx;
+}
+
+/* Button */
+.button-container {
+  width: 100%;
+  margin-top: 30rpx;
+  margin-bottom: 60rpx;
+}
+
+.signup-btn {
+  width: 100%;
+  height: 100rpx;
+  background-color: #d8f1c3; /* Light green background */
+  color: #333333;
+  font-size: 36rpx;
+  font-weight: bold;
+  border: none;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.login-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  width: 100%;
+}
+
+.new-member-text {
+  color: #333333;
+  margin-right: 15rpx;
+}
+
+.login-link {
+  color: #000000;
+  font-weight: bold;
+  text-decoration: underline;
+}

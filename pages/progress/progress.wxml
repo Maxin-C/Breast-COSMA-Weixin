@@ -1,0 +1,70 @@
+<view class="page-container">
+  <view class="nav-bar">
+    <image class="nav-back-icon" src="../../components/images/back-arrow.svg" mode="aspectFit" bind:tap="handleHome"></image>
+    <view class="nav-title">健康记录</view>
+  </view>
+
+  <scroll-view class="content-scroll" scroll-y>
+    <view class="session-status">
+    </view>
+
+    <view class="section-title">日程记录</view>
+    <view class="calendar">
+      <calendar id="calendar" marks="{{markers}}" i-class="calendar-custom-class" view="month" view-gesture="{{ false }}" areas="{{ ['header', 'title', 'subinfo', 'today'] }}" 
+      vibrate="{{false}}"
+      style="--wc-primary: #DCE6D0;  --wc-checked-bg-light: #DCE6D0; --wc-checked-today-bg-light: #DCE6D0; --wc-checked-color-light: #333333; --wc-checked-today-color-light: #333333; --wc-schedule-color-light: #A5B892; --wc-schedule-bg-light: rgba(220, 230, 208, 0.2); --wc-today-color-light: #A5B892; --wc-checked-bg-dark: #DCE6D0;--wc-checked-today-bg-dark: #DCE6D0;--wc-checked-color-dark: #333333;--wc-checked-today-color-dark: #333333; --wc-date-size: 30rpx;"/>
+    </view>
+
+    <view class="section-title">训练小结</view>
+    <view class="stats-grid">
+      <view class="stat-item highlight">
+        <image src="../../components/images/running.svg" class="stat-icon"></image>
+        <view class="stat-info">
+          <text class="stat-label">锻炼总次数</text>
+          <text class="stat-value">{{totalExerciseCount}}</text>
+        </view>
+      </view>
+      <view class="stat-item">
+        <image src="../../components/images/clock.svg" class="stat-icon"></image>
+        <view class="stat-info">
+          <text class="stat-label">平均时长</text>
+          <text class="stat-value">{{averageDuration}}</text>
+        </view>
+      </view>
+      <view class="stat-item">
+        <image src="../../components/images/bell.svg" class="stat-icon"></image>
+        <view class="stat-info">
+          <text class="stat-label">AI动作评估</text>
+          <text class="stat-value">{{aiEvaluation}}</text>
+        </view>
+      </view>
+      <view class="stat-item">
+        <image src="../../components/images/heart.svg" class="stat-icon"></image>
+        <view class="stat-info">
+          <text class="stat-label">生活质量</text>
+          <text class="stat-value">{{qualityOfLife}}</text>
+        </view>
+      </view>
+    </view>
+
+    </scroll-view>
+
+  <view class="custom-tab-bar">
+    <view class="tab-item" bind:tap="handleHome">
+      <image src="../../components/images/home-active.svg" class="tab-icon"></image>
+      <text class="tab-text">主页面</text>
+    </view>
+    <view class="tab-item" bind:tap="handleStartTraining">
+      <image src="../../components/images/exercise-active.svg" class="tab-icon"></image>
+      <text class="tab-text">上肢锻炼</text>
+    </view>
+    <view class="tab-item" bind:tap="handleConsult">
+      <image src="../../components/images/consult-active.svg" class="tab-icon"></image>
+      <text class="tab-text">康复咨询</text>
+    </view>
+    <view class="tab-item">
+      <image src="../../components/images/progress-active.svg" class="tab-icon"></image>
+      <text class="tab-text">日程记录</text>
+    </view>
+  </view>
+</view>

@@ -10,8 +10,43 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/upload_video/upload_video",
-          "pathName": "pages/upload_video/upload_video",
+          "name": "pages/signup/signup",
+          "pathName": "pages/signup/signup",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/exercise/exercise",
+          "pathName": "pages/exercise/exercise",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/login/login",
+          "pathName": "pages/login/login",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/progress/progress",
+          "pathName": "pages/progress/progress",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/chat/chat",
+          "pathName": "pages/chat/chat",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/home/home",
+          "pathName": "pages/home/home",
           "query": "",
           "launchMode": "default",
           "scene": null

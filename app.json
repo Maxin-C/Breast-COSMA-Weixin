@@ -1,15 +1,17 @@
 {
   "pages": [
-    "pages/index/index",
-    "pages/logs/logs",
-    "pages/upload_video/upload_video"
+    "pages/login/login",
+    "pages/signup/signup",
+    "pages/exercise/exercise",
+    "pages/home/home",
+    "pages/chat/chat",
+    "pages/progress/progress"
   ],
   "window": {
     "navigationBarTextStyle": "black",
     "navigationStyle": "custom"
   },
   "style": "v2",
-  "renderer": "skyline",
   "rendererOptions": {
     "skyline": {
       "defaultDisplayBlock": true,
