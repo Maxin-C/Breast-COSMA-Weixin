@@ -1,110 +1,159 @@
-/* index.wxss */
-.page-container {
+/* pages/exercise/exercise.wxss */
+
+.container {
   display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background-color: #f0f0f0;
+  flex-direction: column; /* Stack children vertically */
+  align-items: center;
+  /* Removed justify-content: center; to allow elements to align to start/end naturally */
+  height: 100vh; /* Use 100vh for full viewport height */
+  background-color: #f0f2f5;
+  position: relative;
+  overflow: hidden; /* Prevent overflow issues with camera/video */
 }
 
-.nav-bar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 100;
+/* --- Start Screen --- */
+.start-screen {
   display: flex;
   align-items: center;
-  justify-content: center; /* 标题居中 */
-  padding-top: env(safe-area-inset-top);
-  height: 80px;
-  background-color: #EBF0E6;
-}
-.nav-back-icon {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
-  padding-top: env(safe-area-inset-top);
-  margin-top: 15px;
-}
-.nav-title {
-  font-size: 17px;
-  font-weight: 600;
-  margin-top: 35px;
-}
-
-.camera-wrapper {
-  position: relative;
-  flex: 1;
+  justify-content: center;
   width: 100%;
+  height: 100%; /* Occupy full container height */
 }
 
-.camera-view {
+.start-button {
+  width: 60%;
+  padding: 20rpx 0;
+  font-size: 36rpx;
+  color: #fff;
+  background-color: #4CAF50; /* Green */
+  border-radius: 50rpx;
+  box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.2);
+}
+
+/* --- Camera and Video Wrapper --- */
+/* This wrapper holds both camera and video, controlling their shared space and height */
+.camera-video-wrapper {
+  width: 100%;
+  /* Height is set dynamically via inline style in WXML (cameraHeight) */
+  /* e.g., height: {{cameraHeight}}px; */
+  position: relative; /* Crucial for absolute positioning of children */
+  overflow: hidden; /* Ensures children don't overflow */
+  background-color: #000; /* Black background for visual consistency */
+  flex-shrink: 0; /* Prevent this section from shrinking when controls are present */
+}
+
+/* --- Camera Overlay --- */
+.camera-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-}
-
-.status-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 20rpx;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark overlay */
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40rpx;
+  box-sizing: border-box;
+  z-index: 3; /* Ensure overlay is always on top of camera and video */
 }
 
-.action-label {
-  color: #ffffff;
+.camera-prompt {
+  color: #fff;
+  font-size: 36rpx;
+  margin-bottom: 20rpx;
+  line-height: 1.5;
+}
+
+.camera-countdown {
+  color: #ffeb3b; /* Yellow */
   font-size: 32rpx;
   font-weight: bold;
 }
 
-.controls-container {
-  padding: 15rpx;
-  /* background-color: #ffffff;
-  border-top: 1rpx solid #e0e0e0; */
-}
-
-.active-controls {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-}
-
-.btn-control {
-  width: 45%;
-  margin: 0;
-}
-
-.btn-start {
+/* --- Video Player --- */
+/* Video is now absolutely positioned within .camera-video-wrapper */
+.exercise-video {
   width: 100%;
+  height: 100%; /* Fill parent wrapper */
+  background-color: #000;
+  display: block;
+  /* position, top, left, z-index are handled inline in WXML for dynamic control */
 }
 
-.custom-tab-bar {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
+
+/* --- Controls Container --- */
+.controls-container {
+  width: 100%;
+  padding: 30rpx 40rpx;
+  background-color: #fff;
+  box-shadow: 0 -2rpx 8rpx rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  z-index: 10; /* Ensure controls are above other content */
+  /* This will naturally sit below the camera-video-wrapper due to flex-direction: column on .container */
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10rpx;
+  background-color: #e0e0e0;
+  border-radius: 5rpx;
+  margin-bottom: 20rpx;
+  overflow: hidden; /* Ensures indicator stays within bounds */
+}
+
+.progress-indicator {
+  height: 100%;
+  background-color: #4CAF50; /* Green */
+  border-radius: 5rpx;
+  transition: width 0.3s ease-out; /* Smooth transition for progress */
+}
+
+.progress-text {
+  font-size: 28rpx;
+  color: #555;
+  text-align: center;
+  margin-bottom: 30rpx;
+  display: block; /* Ensures it takes full width */
+}
+
+.button-group {
   display: flex;
   justify-content: space-around;
-  height: 50px;
-  background-color: #EBF0E6;
-  padding-top: 8px;
-  padding-bottom: env(safe-area-inset-bottom);
+  gap: 30rpx; /* Space between buttons */
 }
-.tab-item {
+
+.control-button {
+  flex: 1; /* Buttons take equal space */
+  padding: 15rpx 0;
+  font-size: 32rpx;
+  border-radius: 40rpx;
+  background-color: #2196F3; /* Blue */
+  color: #fff;
+  border: none;
+}
+
+.terminate-button {
+  background-color: #F44336; /* Red */
+}
+
+/* --- Loading Overlay (Optional) --- */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  font-size: 16px;
-  color: #888;
+  justify-content: center;
+  z-index: 100;
 }
-.tab-item.active {
-  color: #333;
-}
-.tab-icon {
-  width: 30px;
-  height: 30px;
-  margin-bottom: 4px;
+
+.loading-text {
+  color: #fff;
+  font-size: 36rpx;
 }

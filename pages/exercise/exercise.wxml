@@ -1,38 +1,70 @@
-<view class="page-container">
-  <view class="nav-bar">
-    <image class="nav-back-icon" src="../../components/images/back-arrow.svg" mode="aspectFit"  bind:tap="handleHome"></image>
-    <view class="nav-title">康复锻炼</view>
-  </view>
-  
-  <view class="camera-wrapper">
-    <camera class="camera-view" device-position="front" flash="off"></camera>
-    <view class="status-overlay">
-      <text class="action-label">{{actionLabel}}</text>
+<view class="container">
+  <block wx:if="{{!isTrainingStarted}}">
+    <view class="start-screen">
+      <button class="start-button" bindtap="startTraining">开始训练</button>
     </view>
-  </view>
-  
-  <view class="controls-container">
-    <button
-      wx:if="{{!isRecording}}"
-      class="btn-control btn-start"
-      type="primary"
-      bindtap="startTraining">
-      开始训练
-    </button>
-    
-    <view wx:if="{{isRecording}}" class="active-controls">
-      <button
-        class="btn-control btn-pause"
-        type="default"
-        bindtap="handlePauseToggle">
-        {{ isPaused ? '继续' : '暂停' }}
-      </button>
-      <button
-        class="btn-control btn-terminate"
-        type="warn"
-        bindtap="handleTerminate">
-        终止
-      </button>
+  </block>
+  <block wx:else>
+    <!-- 摄像头和视频的容器，用于控制层叠和共享空间 -->
+    <!-- Container for camera and video, used to control layering and shared space -->
+    <view class="camera-video-wrapper" style="width: 100%; height: {{cameraHeight}}px;">
+      <!-- Camera component - always rendered when training started. Its visual layer (z-index, opacity) is controlled dynamically. -->
+      <!-- 摄像头组件 - 训练开始时始终渲染。其视觉层（z-index，不透明度）动态控制。 -->
+      <camera
+        device-position="front"
+        flash="off"
+        bindstop="onCameraStop"
+        binderror="onCameraError"
+        style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: {{isCameraVisibleForUser ? 2 : 0}}; opacity: {{isCameraVisibleForUser ? 1 : 0}};"
+      ></camera>
+
+      <!-- Video component - only shown when positioned and not paused. Always on a higher z-index (1) than the hidden camera (0). -->
+      <!-- 视频组件 - 仅在定位成功且未暂停时显示。始终比隐藏的摄像头（0）具有更高的 z-index（1）。 -->
+      <video
+        id="exerciseVideo"
+        class="exercise-video"
+        src="{{currentVideoUrl}}"
+        controls="{{false}}"
+        autoplay="{{true}}"
+        show-play-btn="{{false}}"
+        show-fullscreen-btn="{{false}}"
+        enable-play-gesture="{{false}}"
+        loop="{{false}}"
+        bindended="onVideoEnded"
+        bindtimeupdate="onVideoTimeUpdate"
+        bindwaiting="onVideoWaiting"
+        bindplay="onVideoPlay"
+        binderror="onVideoError"
+        wx:if="{{isPositioned && !isPaused}}"
+      ></video>
+
+      <!-- Overlay for positioning prompt - only visible when camera is visible to user and not positioned -->
+      <!-- 定位提示的覆盖层 - 仅在摄像头对用户可见且未定位时显示 -->
+      <view class="camera-overlay" wx:if="{{isCameraVisibleForUser && !isPositioned}}">
+        <text class="camera-prompt">请调整位置，将上半身放入摄像头范围内</text>
+        <text class="camera-countdown">{{countdown}}s 后返回</text>
+      </view>
     </view>
+
+    <view class="controls-container" wx:if="{{isPositioned}}">
+      <view class="progress-bar">
+        <view class="progress-indicator" style="width: {{totalProgressPercentage}}%;"></view>
+      </view>
+      <text class="progress-text">
+        当前动作: {{currentActionName}} (已完成 {{completedDemonstrationVideos}} / 共 {{totalDemonstrationVideos}} 个动作)
+        剩余动作: {{totalDemonstrationVideos - completedDemonstrationVideos}}
+      </text>
+
+      <view class="button-group">
+        <button class="control-button" bindtap="togglePause">
+          {{isPaused ? '继续' : '暂停'}}
+        </button>
+        <button class="control-button terminate-button" bindtap="terminateTraining">终止</button>
+      </view>
+    </view>
+  </block>
+
+  <view wx:if="{{showLoading}}" class="loading-overlay">
+    <text class="loading-text">加载视频中...</text>
   </view>
 </view>
