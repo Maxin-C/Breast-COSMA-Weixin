@@ -1,11 +1,13 @@
 // home.js
+const app = getApp();
 Page({
   data: {
     // Default values, will be updated from API
     username: '用户', // Default username
     weeklyCompletedSessions: 0, // Number of sessions completed this week
     weeklyProgressPercentage: 0, // Weekly recovery plan progress (sessions completed / 5)
-    userId: null // Will be read from cache
+    userId: null, // Will be read from cache
+    backendBaseUrl: app.globalData.backendBaseUrl
   },
 
   onLoad: function (options) {
@@ -36,7 +38,7 @@ Page({
   // Fetches user's name from the database
   fetchUserData: function(userId) {
     wx.request({
-      url: `http://localhost:8000/users/${userId}`, // Endpoint to get user by ID
+      url: `${this.data.backendBaseUrl}/users/${userId}`, // Endpoint to get user by ID
       method: 'GET',
       success: (res) => {
         if (res.statusCode === 200 && res.data) {
@@ -74,7 +76,7 @@ Page({
     startOfWeek.setHours(0, 0, 0, 0); // Set to start of the day
 
     wx.request({
-      url: `http://localhost:8000/recovery_records/search`, // Endpoint to search recovery records
+      url: `${this.data.backendBaseUrl}/recovery_records/search`, // Endpoint to search recovery records
       method: 'GET',
       data: {
         field: 'user_id',

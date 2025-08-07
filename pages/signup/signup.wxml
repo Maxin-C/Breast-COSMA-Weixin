@@ -48,6 +48,20 @@
   </view>
 </view>
 
+<!-- 新增：是否拔管选择 -->
+<view class="input-group">
+  <text class="input-label">是否拔管 *</text>
+  <radio-group class="radio-group" bindchange="handleDrainageChange">
+    <label class="radio">
+      <radio value="true" checked="{{isDrainageRemoved === true}}"/> 是
+    </label>
+    <label class="radio">
+      <radio value="false" checked="{{isDrainageRemoved === false}}"/> 否
+    </label>
+  </radio-group>
+</view>
+<!-- 新增结束 -->
+
 <view class="button-container">
   <button class="signup-btn" bindtap="handleSignUp">注册</button>
 </view>

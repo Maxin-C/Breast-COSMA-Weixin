@@ -1,4 +1,5 @@
 // signup.js
+const app = getApp();
 Page({
   /**
    * Page initial data
@@ -6,7 +7,9 @@ Page({
   data: {
     name: '',
     phoneNum: '',
-    srrshId: ''
+    srrshId: '',
+    isDrainageRemoved: null, // 新增：是否拔管的状态，null表示未选择，true表示是，false表示否
+    backendBaseUrl: app.globalData.backendBaseUrl
   },
 
   /**
@@ -37,13 +40,23 @@ Page({
   },
 
   /**
+   * Event handler for drainage removal radio group
+   */
+  handleDrainageChange: function (e) {
+    // 将字符串 'true' 或 'false' 转换为布尔值
+    this.setData({
+      isDrainageRemoved: e.detail.value === 'true'
+    });
+  },
+
+  /**
    * Event handler for the "Register" button
    */
   handleSignUp: function () {
-    const { name, phoneNum, srrshId } = this.data;
+    const { name, phoneNum, srrshId, isDrainageRemoved } = this.data;
 
     // Basic form validation
-    if (!name || !phoneNum || !srrshId) {
+    if (!name || !phoneNum || !srrshId || isDrainageRemoved === null) {
       wx.showToast({
         title: '请填写所有必填项',
         icon: 'none',
@@ -71,11 +84,11 @@ Page({
       return;
     }
 
-    console.log('Attempting to sign up or log in with:', { name, phone_number: phoneNum, srrsh_id: srrshId });
+    console.log('Attempting to sign up or log in with:', { name, phone_number: phoneNum, srrsh_id: srrshId, isDrainageRemoved });
 
     // Step 1: Check if user already exists
     wx.request({
-      url: 'http://localhost:8000/users/search',
+      url: `${this.data.backendBaseUrl}/users/search`,
       method: 'GET',
       data: {
         field: 'name',
@@ -91,7 +104,7 @@ Page({
 
             // Find user_plan_id
             wx.request({
-              url: 'http://localhost:8000/user_recovery_plans/search',
+              url: `${this.data.backendBaseUrl}/user_recovery_plans/search`,
               method: 'GET',
               data: {
                 field: 'user_id',
@@ -133,11 +146,11 @@ Page({
             });
           } else {
             // Name exists, but phone number doesn't match, proceed to register new user
-            this.registerNewUser(name, phoneNum, srrshId);
+            this.registerNewUser(name, phoneNum, srrshId, isDrainageRemoved);
           }
         } else if (searchRes.statusCode === 404 || searchRes.data.length === 0) {
           // User not found, proceed to register new user
-          this.registerNewUser(name, phoneNum, srrshId);
+          this.registerNewUser(name, phoneNum, srrshId, isDrainageRemoved);
         } else {
           wx.showToast({
             title: searchRes.data.message || '查询用户失败，请重试。',
@@ -159,9 +172,12 @@ Page({
   },
 
   // Helper function to handle new user registration and plan binding
-  registerNewUser: function(name, phoneNum, srrshId) {
+  registerNewUser: function(name, phoneNum, srrshId, isDrainageRemoved) {
+    // 根据是否拔管选择对应的 plan_id
+    const planIdToAssign = isDrainageRemoved ? 2 : 1; // 2 for stage_two, 1 for stage_one
+
     wx.request({
-      url: 'http://localhost:8000/users', // Base URL + endpoint for adding users
+      url: `${this.data.backendBaseUrl}/users`, // Base URL + endpoint for adding users
       method: 'POST',
       data: {
         name: name,
@@ -173,13 +189,13 @@ Page({
           const newUserId = res.data.user.user_id;
           wx.setStorageSync('user_id', newUserId); // Cache new user_id
 
-          // Bind new user to plan_id: 1
+          // Bind new user to the determined plan_id
           wx.request({
-            url: 'http://localhost:8000/user_recovery_plans',
+            url: `${this.data.backendBaseUrl}/user_recovery_plans`,
             method: 'POST',
             data: {
               user_id: newUserId,
-              plan_id: 1, // Automatically assign to plan_id 1
+              plan_id: planIdToAssign, // 根据用户选择的 plan_id
               status: 'active'
             },
             success: (planRes) => {

@@ -13,7 +13,7 @@
 /* Illustration */
 .illustration-container {
   width: 500rpx;
-  height: 500rpx;
+  height: 350rpx;
   margin-top: -100rpx;
 }
 
@@ -130,4 +130,25 @@
   color: #000000;
   font-weight: bold;
   text-decoration: underline;
+}
+
+/* 新增：Radio Group 样式 */
+.radio-group {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  width: 100%;
+  margin-top: 20rpx;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  font-size: 32rpx;
+  color: #333333;
+}
+
+.radio radio {
+  margin-right: 10rpx;
+  transform: scale(0.8); /* 调整radio按钮大小 */
 }

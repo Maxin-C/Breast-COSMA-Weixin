@@ -1,4 +1,5 @@
 // pages/progress/progress.js
+const app = getApp();
 Page({
   data: {
     markers: [],
@@ -11,7 +12,8 @@ Page({
     // chartData (如果将来需要图表展示可以保留)
     chartData: [60, 85, 40, 75, 50, 90, 70, 45, 20, 30, 15, 25],
 
-    userId: null // 用户ID，从缓存读取
+    userId: null, // 用户ID，从缓存读取
+    backendBaseUrl: app.globalData.backendBaseUrl
   },
 
   onLoad: function () {
@@ -41,7 +43,7 @@ Page({
   // 获取需要高亮的日期 (日程记录)
   fetchHighlightedDates: function (userId) {
     wx.request({
-      url: `http://localhost:8000/calendar_schedules/search`,
+      url: `${this.data.backendBaseUrl}/calendar_schedules/search`,
       method: 'GET',
       data: {
         field: 'user_id',
@@ -82,7 +84,7 @@ Page({
   // 获取锻炼总次数
   fetchTotalExerciseCount: function(userId) {
     wx.request({
-      url: `http://localhost:8000/recovery_records/search`,
+      url: `${this.data.backendBaseUrl}/recovery_records/search`,
       method: 'GET',
       data: {
         field: 'user_id',
@@ -116,7 +118,7 @@ Page({
 
     // Step 1: Get all recovery records for the user to get record_ids
     wx.request({
-      url: `http://localhost:8000/recovery_records/search`,
+      url: `${this.data.backendBaseUrl}/recovery_records/search`,
       method: 'GET',
       data: {
         field: 'user_id',
@@ -138,7 +140,7 @@ Page({
           const detailRequests = recordIds.map(recordId => {
             return new Promise((resolve, reject) => {
               wx.request({
-                url: `http://localhost:8000/recovery_record_details/search`,
+                url: `${this.data.backendBaseUrl}/recovery_record_details/search`,
                 method: 'GET',
                 data: {
                   field: 'record_id',
@@ -231,7 +233,7 @@ Page({
   // 获取生活质量
   fetchQualityOfLife: function(userId) {
     wx.request({
-      url: `http://localhost:8000/qols/search`,
+      url: `${this.data.backendBaseUrl}/qols/search`,
       method: 'GET',
       data: {
         field: 'user_id',

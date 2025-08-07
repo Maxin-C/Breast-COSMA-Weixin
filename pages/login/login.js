@@ -1,11 +1,13 @@
 // login.js
+const app = getApp();
 Page({
   /**
    * Page initial data
    */
   data: {
     username: '',
-    phoneNum: ''
+    phoneNum: '',
+    backendBaseUrl: app.globalData.backendBaseUrl
   },
 
   /**
@@ -46,7 +48,7 @@ Page({
     
     // API call to your backend server for user search
     wx.request({
-      url: 'http://localhost:8000/users/search', // Base URL + endpoint 
+      url: `${this.data.backendBaseUrl}/users/search`, // Base URL + endpoint 
       method: 'GET', 
       data: {
         field: 'name', 
@@ -64,7 +66,7 @@ Page({
 
             // Now, find the user_plan_id for this user
             wx.request({
-              url: 'http://localhost:8000/user_recovery_plans/search',
+              url: `${this.data.backendBaseUrl}/user_recovery_plans/search`,
               method: 'GET',
               data: {
                 field: 'user_id',
