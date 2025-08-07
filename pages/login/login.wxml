@@ -21,7 +21,7 @@
     </view>
   </view>
 
-  <view class="input-group">
+  <!-- <view class="input-group">
     <text class="input-label">手机号 *</text>
     <view class="input-box">
       <input
@@ -32,7 +32,7 @@
         bindinput="handlePhoneNumInput"
       />
     </view>
-  </view>
+  </view> -->
 
   <view class="button-container">
     <button class="login-btn" bindtap="handleLogin">登录</button>

@@ -481,9 +481,15 @@ Page({
     this.setData({
       isPositioned: true,
       isCameraVisibleForUser: false, // Hide camera feed from user view (从用户视图中隐藏摄像头画面)
+      isPaused: false,
     }, () => {
       // Initialize video context after video component is rendered (视频组件渲染后初始化视频上下文)
-      this.data.videoPlayer = wx.createVideoContext('exerciseVideo');
+      // this.data.videoPlayer = wx.createVideoContext('exerciseVideo');
+      
+      // 新增：检查 videoPlayer 是否已存在，避免在重新定位时重复创建
+      if (!this.data.videoPlayer) {
+        this.data.videoPlayer = wx.createVideoContext('exerciseVideo');
+      }
       this.playNextVideo();
       // At this point, no general camera monitoring should be active.
       // playNextVideo will decide what monitoring to start based on video type.

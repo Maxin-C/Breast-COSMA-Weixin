@@ -6,8 +6,7 @@ Page({
    */
   data: {
     name: '',
-    phoneNum: '',
-    srrshId: '',
+    serialNumber: '', // 修改：srrshId -> serialNumber
     isDrainageRemoved: null, // 新增：是否拔管的状态，null表示未选择，true表示是，false表示否
     backendBaseUrl: app.globalData.backendBaseUrl
   },
@@ -22,20 +21,11 @@ Page({
   },
 
   /**
-   * Event handler for phone number input
+   * Event handler for Serial Number input
    */
-  handlePhoneNumInput: function (e) {
+  handleSerialNumberInput: function (e) { // 修改：handleSrrshIdInput -> handleSerialNumberInput
     this.setData({
-      phoneNum: e.detail.value
-    });
-  },
-
-  /**
-   * Event handler for SRRSH ID input
-   */
-  handleSrrshIdInput: function (e) {
-    this.setData({
-      srrshId: e.detail.value
+      serialNumber: e.detail.value // 修改：srrshId -> serialNumber
     });
   },
 
@@ -53,10 +43,10 @@ Page({
    * Event handler for the "Register" button
    */
   handleSignUp: function () {
-    const { name, phoneNum, srrshId, isDrainageRemoved } = this.data;
+    const { name, serialNumber, isDrainageRemoved } = this.data; // 修改：移除了 phoneNum, srrshId -> serialNumber
 
     // Basic form validation
-    if (!name || !phoneNum || !srrshId || isDrainageRemoved === null) {
+    if (!name || !serialNumber || isDrainageRemoved === null) { // 修改：移除了 phoneNum 的校验
       wx.showToast({
         title: '请填写所有必填项',
         icon: 'none',
@@ -65,40 +55,32 @@ Page({
       return;
     }
 
-    // Optional: Add more robust validation for phone number and SRRSH ID formats
-    if (!/^\d{11}$/.test(phoneNum)) {
+    // Optional: Add more robust validation for serial number format
+    if (!/^\d+$/.test(serialNumber)) { // 修改：srrshId -> serialNumber
       wx.showToast({
-        title: '手机号格式不正确',
+        title: '编号格式不正确', // 修改：病例号 -> 编号
         icon: 'none',
         duration: 2000
       });
       return;
     }
 
-    if (!/^\d+$/.test(srrshId)) {
-      wx.showToast({
-        title: '病例号格式不正确',
-        icon: 'none',
-        duration: 2000
-      });
-      return;
-    }
+    console.log('Attempting to sign up or log in with:', { name, srrsh_id: serialNumber, isDrainageRemoved });
 
-    console.log('Attempting to sign up or log in with:', { name, phone_number: phoneNum, srrsh_id: srrshId, isDrainageRemoved });
-
-    // Step 1: Check if user already exists
+    // Step 1: Check if user already exists based on serialNumber (srrsh_id)
     wx.request({
       url: `${this.data.backendBaseUrl}/users/search`,
       method: 'GET',
       data: {
-        field: 'name',
-        value: name
+        field: 'srrsh_id', // 修改：查询字段从 name 改为 srrsh_id
+        value: serialNumber
       },
       success: (searchRes) => {
         if (searchRes.statusCode === 200 && searchRes.data.length > 0) {
-          const existingUser = searchRes.data.find(u => u.phone_number === phoneNum);
-          if (existingUser) {
-            // User exists, proceed with login logic
+          const existingUser = searchRes.data[0];
+          // User with this serial number exists, check if the name matches
+          if (existingUser.name === name) {
+            // User exists and name matches, proceed with login logic
             const userId = existingUser.user_id;
             wx.setStorageSync('user_id', userId);
 
@@ -116,14 +98,14 @@ Page({
                   userPlanId = planRes.data[0].user_plan_id; // Take the first plan
                   wx.setStorageSync('user_plan_id', userPlanId);
                   wx.showToast({
-                    title: '用户已存在，直接登录成功！',
+                    title: '用户已存在，登录成功！',
                     icon: 'success',
                     duration: 1500
                   });
                 } else {
                   console.warn('用户已存在，但未找到恢复计划。');
                   wx.showToast({
-                    title: '用户已存在，登录成功但未找到恢复计划。',
+                    title: '登录成功但未找到计划。',
                     icon: 'none',
                     duration: 2000
                   });
@@ -135,7 +117,7 @@ Page({
               fail: (planErr) => {
                 console.error('获取用户恢复计划失败:', planErr);
                 wx.showToast({
-                  title: '用户已存在，登录成功但获取恢复计划失败。',
+                  title: '登录成功但获取计划失败。',
                   icon: 'none',
                   duration: 2000
                 });
@@ -145,12 +127,16 @@ Page({
               }
             });
           } else {
-            // Name exists, but phone number doesn't match, proceed to register new user
-            this.registerNewUser(name, phoneNum, srrshId, isDrainageRemoved);
+            // Serial number is taken by another user
+            wx.showToast({
+              title: '该编号已被注册，请核对。',
+              icon: 'none',
+              duration: 2000
+            });
           }
         } else if (searchRes.statusCode === 404 || searchRes.data.length === 0) {
           // User not found, proceed to register new user
-          this.registerNewUser(name, phoneNum, srrshId, isDrainageRemoved);
+          this.registerNewUser(name, serialNumber, isDrainageRemoved);
         } else {
           wx.showToast({
             title: searchRes.data.message || '查询用户失败，请重试。',
@@ -172,7 +158,7 @@ Page({
   },
 
   // Helper function to handle new user registration and plan binding
-  registerNewUser: function(name, phoneNum, srrshId, isDrainageRemoved) {
+  registerNewUser: function(name, serialNumber, isDrainageRemoved) { // 修改：移除了 phoneNum, srrshId -> serialNumber
     // 根据是否拔管选择对应的 plan_id
     const planIdToAssign = isDrainageRemoved ? 2 : 1; // 2 for stage_two, 1 for stage_one
 
@@ -181,8 +167,7 @@ Page({
       method: 'POST',
       data: {
         name: name,
-        phone_number: phoneNum,
-        srrsh_id: parseInt(srrshId)
+        srrsh_id: parseInt(serialNumber) // 修改：移除了 phone_number，srrshId -> serialNumber
       },
       success: (res) => {
         if (res.statusCode === 201) {
@@ -195,7 +180,7 @@ Page({
             method: 'POST',
             data: {
               user_id: newUserId,
-              plan_id: planIdToAssign, // 根据用户选择的 plan_id
+              plan_id: planIdToAssign,
               status: 'active'
             },
             success: (planRes) => {
@@ -213,7 +198,7 @@ Page({
                 });
               } else {
                 wx.showToast({
-                  title: planRes.data.message || '注册成功但绑定恢复计划失败，请联系管理员。',
+                  title: planRes.data.message || '注册成功但绑定计划失败。',
                   icon: 'none',
                   duration: 2000
                 });
@@ -226,7 +211,7 @@ Page({
             fail: (planErr) => {
               console.error('User recovery plan binding request failed:', planErr);
               wx.showToast({
-                title: '注册成功但网络错误，未能绑定恢复计划。',
+                title: '注册成功但网络错误，绑定计划失败。',
                 icon: 'none',
                 duration: 2000
               });

@@ -46,6 +46,7 @@
       <!-- 定位提示的覆盖层 - 仅在摄像头对用户可见且未定位时显示 -->
       <view class="camera-overlay" wx:if="{{isCameraVisibleForUser && !isPositioned}}">
         <text class="camera-prompt">请调整位置，将上半身放入摄像头范围内</text>
+        <view class="guide-box"></view>
         <text class="camera-countdown">{{countdown}}s 后返回</text>
       </view>
     </view>

@@ -98,6 +98,16 @@
   font-weight: bold;
 }
 
+.guide-box {
+  width: 95%;
+  /* 使用 aspect-ratio 保持矩形框的形状 (4:3) */
+  aspect-ratio: 4 / 6;
+  max-height: 180%;
+  border: 3px dashed rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  margin: 25rpx 0; /* 在文本和框之间添加一些间距 */
+}
+
 /* --- Video Player --- */
 /* Video is now absolutely positioned within .camera-video-wrapper */
 .exercise-video {

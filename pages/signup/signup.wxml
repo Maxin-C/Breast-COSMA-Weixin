@@ -23,32 +23,16 @@
 </view>
 
 <view class="input-group">
-  <text class="input-label">手机号 *</text>
+  <text class="input-label">编号 *</text>
   <view class="input-box">
     <input
       class="input-field"
       type="number"
-      placeholder="12366668888"
-      placeholder-style="color: #999;"
-      bindinput="handlePhoneNumInput"
-    />
+      placeholder="请输入您的编号" placeholder-style="color: #999;"
+      bindinput="handleSerialNumberInput" />
   </view>
 </view>
 
-<view class="input-group">
-  <text class="input-label">病例号 *</text>
-  <view class="input-box">
-    <input
-      class="input-field"
-      type="number"
-      placeholder="123456"
-      placeholder-style="color: #999;"
-      bindinput="handleSrrshIdInput"
-    />
-  </view>
-</view>
-
-<!-- 新增：是否拔管选择 -->
 <view class="input-group">
   <text class="input-label">是否拔管 *</text>
   <radio-group class="radio-group" bindchange="handleDrainageChange">
@@ -60,8 +44,6 @@
     </label>
   </radio-group>
 </view>
-<!-- 新增结束 -->
-
 <view class="button-container">
   <button class="signup-btn" bindtap="handleSignUp">注册</button>
 </view>
