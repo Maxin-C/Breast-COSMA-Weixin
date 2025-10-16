@@ -42,4 +42,17 @@
     <text class="new-member-text">第一次加入项目?</text>
     <text class="signup-link" bindtap="handleSignUp">点击注册</text>
   </view>
+
+  <view class="modal-mask" wx:if="{{ showSubscribeModal }}">
+    <view class="modal-container">
+      <view class="modal-title">订阅康复提醒</view>
+      <view class="modal-content">
+        为了更好地跟进您的康复计划，我们将在明天上午8点向您发送一条训练提醒。
+      </view>
+      <view class="modal-actions">
+        <button class="action-btn cancel-btn" bindtap="onCancelSubscribe">以后再说</button>
+        <button class="action-btn confirm-btn" bindtap="onConfirmSubscribe">好的</button>
+      </view>
+    </view>
+  </view>
 </view>

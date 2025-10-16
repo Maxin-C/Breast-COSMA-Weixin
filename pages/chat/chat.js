@@ -23,8 +23,8 @@ Page({
         userId: userId // Update data with the retrieved userId
       });
       // Fetch user info and calculate weekly progress when the page loads
-      this.fetchUserData(userId);
-      this.calculateWeeklyProgress(userId);
+      // this.fetchUserData(userId);
+      // this.calculateWeeklyProgress(userId);
       // calculateTotalProgress is removed as per requirements
     } else {
       wx.showToast({

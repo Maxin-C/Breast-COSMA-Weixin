@@ -1,4 +1,3 @@
-// signup.js
 const app = getApp();
 Page({
   /**
@@ -6,47 +5,35 @@ Page({
    */
   data: {
     name: '',
-    serialNumber: '', // 修改：srrshId -> serialNumber
-    isDrainageRemoved: null, // 新增：是否拔管的状态，null表示未选择，true表示是，false表示否
-    backendBaseUrl: app.globalData.backendBaseUrl
+    serialNumber: '',
+    isDrainageRemoved: null,
+    backendBaseUrl: app.globalData.backendBaseUrl,
+    templateId: app.globalData.templateId[0],
+    showSubscribeModal: false
   },
 
-  /**
-   * Event handler for name input
-   */
   handleNameInput: function (e) {
     this.setData({
       name: e.detail.value
     });
   },
 
-  /**
-   * Event handler for Serial Number input
-   */
-  handleSerialNumberInput: function (e) { // 修改：handleSrrshIdInput -> handleSerialNumberInput
+  handleSerialNumberInput: function (e) {
     this.setData({
-      serialNumber: e.detail.value // 修改：srrshId -> serialNumber
+      serialNumber: e.detail.value
     });
   },
 
-  /**
-   * Event handler for drainage removal radio group
-   */
   handleDrainageChange: function (e) {
-    // 将字符串 'true' 或 'false' 转换为布尔值
     this.setData({
       isDrainageRemoved: e.detail.value === 'true'
     });
   },
 
-  /**
-   * Event handler for the "Register" button
-   */
   handleSignUp: function () {
-    const { name, serialNumber, isDrainageRemoved } = this.data; // 修改：移除了 phoneNum, srrshId -> serialNumber
+    const { name, serialNumber, isDrainageRemoved } = this.data;
 
-    // Basic form validation
-    if (!name || !serialNumber || isDrainageRemoved === null) { // 修改：移除了 phoneNum 的校验
+    if (!name || !serialNumber || isDrainageRemoved === null) {
       wx.showToast({
         title: '请填写所有必填项',
         icon: 'none',
@@ -54,248 +41,261 @@ Page({
       });
       return;
     }
-
-    // Optional: Add more robust validation for serial number format
-    if (!/^\d+$/.test(serialNumber)) { // 修改：srrshId -> serialNumber
+    if (!/^\d+$/.test(serialNumber)) {
       wx.showToast({
-        title: '编号格式不正确', // 修改：病例号 -> 编号
+        title: '编号格式不正确',
         icon: 'none',
         duration: 2000
       });
       return;
     }
 
-    console.log('Attempting to sign up or log in with:', { name, srrsh_id: serialNumber, isDrainageRemoved });
+    wx.showLoading({ title: '请稍候...' });
 
-    // Step 1: Check if user already exists based on serialNumber (srrsh_id)
     wx.request({
       url: `${this.data.backendBaseUrl}/users/search`,
       method: 'GET',
       data: {
-        field: 'srrsh_id', // 修改：查询字段从 name 改为 srrsh_id
+        field: 'srrsh_id',
         value: serialNumber
       },
       success: (searchRes) => {
+        wx.hideLoading();
         if (searchRes.statusCode === 200 && searchRes.data.length > 0) {
           const existingUser = searchRes.data[0];
-          // User with this serial number exists, check if the name matches
           if (existingUser.name === name) {
-            // User exists and name matches, proceed with login logic
+            // 用户存在且姓名匹配，这是“登录”场景
             const userId = existingUser.user_id;
             wx.setStorageSync('user_id', userId);
 
-            // Find user_plan_id
-            wx.request({
-              url: `${this.data.backendBaseUrl}/user_recovery_plans/search`,
-              method: 'GET',
-              data: {
-                field: 'user_id',
-                value: userId
-              },
-              success: (planRes) => {
-                let userPlanId = null;
-                if (planRes.statusCode === 200 && planRes.data.length > 0) {
-                  userPlanId = planRes.data[0].user_plan_id; // Take the first plan
-                  wx.setStorageSync('user_plan_id', userPlanId);
-                  wx.showToast({
-                    title: '用户已存在，登录成功！',
-                    icon: 'success',
-                    duration: 1500
-                  });
-                } else {
-                  console.warn('用户已存在，但未找到恢复计划。');
-                  wx.showToast({
-                    title: '登录成功但未找到计划。',
-                    icon: 'none',
-                    duration: 2000
-                  });
-                }
-                wx.navigateTo({
-                  url: '/pages/home/home'
-                });
-              },
-              fail: (planErr) => {
-                console.error('获取用户恢复计划失败:', planErr);
-                wx.showToast({
-                  title: '登录成功但获取计划失败。',
-                  icon: 'none',
-                  duration: 2000
-                });
-                wx.navigateTo({
-                  url: '/pages/home/home'
-                });
-              }
-            });
+            wx.showToast({ title: '登录成功！', icon: 'success' });
+
+            // --- 核心改动：调用新的检查函数 ---
+            this.checkSubscriptionAndProceed(userId, existingUser);
+
           } else {
-            // Serial number is taken by another user
-            wx.showToast({
-              title: '该编号已被注册，请核对。',
-              icon: 'none',
-              duration: 2000
-            });
+            wx.showToast({ title: '该编号已被注册，请核对。', icon: 'none' });
           }
         } else if (searchRes.statusCode === 404 || searchRes.data.length === 0) {
-          // User not found, proceed to register new user
+          // 用户不存在，这是“注册”场景
           this.registerNewUser(name, serialNumber, isDrainageRemoved);
         } else {
-          wx.showToast({
-            title: searchRes.data.message || '查询用户失败，请重试。',
-            icon: 'none',
-            duration: 2000
-          });
-          console.error('User search failed:', searchRes.data);
+          wx.showToast({ title: '查询用户失败，请重试。', icon: 'none' });
         }
       },
       fail: (err) => {
+        wx.hideLoading();
         console.error('用户查询请求失败:', err);
-        wx.showToast({
-          title: '网络错误，请稍后再试。',
-          icon: 'none',
-          duration: 2000
-        });
+        wx.showToast({ title: '网络错误，请稍后再试。', icon: 'none' });
       }
     });
   },
-
-  // Helper function to handle new user registration and plan binding
-  registerNewUser: function(name, serialNumber, isDrainageRemoved) { // 修改：移除了 phoneNum, srrshId -> serialNumber
-    // 根据是否拔管选择对应的 plan_id
-    const planIdToAssign = isDrainageRemoved ? 2 : 1; // 2 for stage_two, 1 for stage_one
-
+  
+  /**
+   * 新增：检查订阅状态并决定下一步操作
+   * @param {number} userId - The user's ID.
+   * @param {object} user - The full user object from the backend.
+   */
+  checkSubscriptionAndProceed: function(userId, user) {
     wx.request({
-      url: `${this.data.backendBaseUrl}/users`, // Base URL + endpoint for adding users
-      method: 'POST',
-      data: {
-        name: name,
-        srrsh_id: parseInt(serialNumber) // 修改：移除了 phone_number，srrshId -> serialNumber
-      },
-      success: (res) => {
-        if (res.statusCode === 201) {
-          const newUserId = res.data.user.user_id;
-          wx.setStorageSync('user_id', newUserId); // Cache new user_id
-
-          // Bind new user to the determined plan_id
-          wx.request({
-            url: `${this.data.backendBaseUrl}/user_recovery_plans`,
-            method: 'POST',
-            data: {
-              user_id: newUserId,
-              plan_id: planIdToAssign,
-              status: 'active'
-            },
-            success: (planRes) => {
-              if (planRes.statusCode === 201) {
-                const newUserPlanId = planRes.data.user_plan.user_plan_id;
-                wx.setStorageSync('user_plan_id', newUserPlanId); // Cache new user_plan_id
-
-                wx.showToast({
-                  title: '注册成功并绑定恢复计划！',
-                  icon: 'success',
-                  duration: 1500
-                });
-                wx.navigateTo({
-                  url: '/pages/home/home'
-                });
-              } else {
-                wx.showToast({
-                  title: planRes.data.message || '注册成功但绑定计划失败。',
-                  icon: 'none',
-                  duration: 2000
-                });
-                console.error('Failed to bind user to recovery plan:', planRes.data);
-                wx.navigateTo({
-                  url: '/pages/home/home'
-                });
-              }
-            },
-            fail: (planErr) => {
-              console.error('User recovery plan binding request failed:', planErr);
-              wx.showToast({
-                title: '注册成功但网络错误，绑定计划失败。',
-                icon: 'none',
-                duration: 2000
-              });
-              wx.navigateTo({
-                url: '/pages/home/home'
-              });
+        url: `${this.data.backendBaseUrl}/api/check_subscription_status`,
+        method: 'GET',
+        data: {
+            user_id: userId,
+            template_id: this.data.templateId
+        },
+        success: (res) => {
+            if (res.statusCode === 200 && res.data.isSubscribed) {
+                // 已订阅，直接跳转
+                console.log('用户已订阅明日提醒，直接跳转。');
+                this.findPlanAndNavigate(userId);
+            } else {
+                // 未订阅，继续检查 openid 并准备显示弹窗
+                console.log('用户未订阅，检查openid。');
+                if (!user.wechat_openid) {
+                    console.log('用户缺少 openid，开始更新...');
+                    this.updateUserOpenId(userId);
+                } else {
+                    console.log('用户 openid 已存在，显示订阅弹窗');
+                    this.setData({ showSubscribeModal: true });
+                }
             }
-          });
-        } else {
-          wx.showToast({
-            title: res.data.message || '注册失败，请重试。',
-            icon: 'none',
-            duration: 2000
-          });
-          console.error('Registration failed:', res.data);
+        },
+        fail: (err) => {
+            // 如果检查失败，为保险起见，默认执行显示弹窗的流程
+            console.error('检查订阅状态失败，默认显示弹窗:', err);
+            if (!user.wechat_openid) {
+                this.updateUserOpenId(userId);
+            } else {
+                this.setData({ showSubscribeModal: true });
+            }
         }
-      },
-      fail: (err) => {
-        console.error('Registration request failed:', err);
-        wx.showToast({
-          title: '网络错误，请稍后再试。',
-          icon: 'none',
-          duration: 2000
-        });
-      }
     });
   },
 
   /**
-   * Event handler for the "Login" link
+   * 获取 code 并请求后端更新 openid 的函数
+   * @param {number} userId - The ID of the user to update.
    */
+  updateUserOpenId: function (userId) {
+    wx.showLoading({ title: '正在同步信息...' });
+
+    wx.login({
+      success: (res) => {
+        if (res.code) {
+          wx.request({
+            url: `${this.data.backendBaseUrl}/users/update_openid`,
+            method: 'POST',
+            data: { user_id: userId, code: res.code },
+            success: (updateRes) => {
+              if (updateRes.statusCode === 200) {
+                console.log('后端更新 openid 成功');
+                // 更新 openid 成功后，直接显示订阅弹窗（因为新用户或无 openid 的老用户肯定没有订阅）
+                this.setData({ showSubscribeModal: true });
+              } else {
+                wx.showToast({ title: '同步用户信息失败', icon: 'none' });
+                console.error('更新 openid 失败:', updateRes);
+              }
+            },
+            fail: (err) => {
+              wx.showToast({ title: '网络请求失败', icon: 'none' });
+              console.error('请求更新 openid 接口失败:', err);
+            },
+            complete: () => {
+              wx.hideLoading();
+            }
+          });
+        } else {
+          wx.hideLoading();
+          wx.showToast({ title: '获取登录凭证失败', icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.hideLoading();
+        wx.showToast({ title: '微信登录失败', icon: 'none' });
+      }
+    });
+  },
+
+  registerNewUser: function(name, serialNumber, isDrainageRemoved) {
+    wx.showLoading({ title: '正在为您注册...' });
+    const planIdToAssign = isDrainageRemoved ? 2 : 1;
+    const extubationStatus = isDrainageRemoved ? "已拔管" : "未拔管";
+
+    wx.request({
+      url: `${this.data.backendBaseUrl}/users`,
+      method: 'POST',
+      data: {
+        name: name,
+        srrsh_id: parseInt(serialNumber),
+        extubation_status: extubationStatus
+      },
+      success: (res) => {
+        if (res.statusCode === 201) {
+          const newUserId = res.data.user.user_id;
+          wx.setStorageSync('user_id', newUserId);
+          
+          wx.request({
+            url: `${this.data.backendBaseUrl}/user_recovery_plans`,
+            method: 'POST',
+            data: { user_id: newUserId, plan_id: planIdToAssign, status: 'active' },
+            success: (planRes) => {
+              if (planRes.statusCode === 201) {
+                wx.hideLoading();
+                wx.setStorageSync('user_plan_id', planRes.data.user_plan.user_plan_id);
+                // 核心改动：注册成功后，立即为其更新 openid
+                console.log('新用户注册成功，开始更新 openid...');
+                this.updateUserOpenId(newUserId);
+              } else {
+                wx.hideLoading();
+                wx.showToast({ title: '注册成功但绑定计划失败', icon: 'none' });
+              }
+            },
+            fail: () => {
+              wx.hideLoading();
+              wx.showToast({ title: '网络错误，绑定计划失败', icon: 'none' });
+            }
+          });
+        } else {
+          wx.hideLoading();
+          wx.showToast({ title: '注册失败，请重试', icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.hideLoading();
+        wx.showToast({ title: '网络错误，注册失败', icon: 'none' });
+      }
+    });
+  },
+  
+  onConfirmSubscribe() {
+    const tmplId = this.data.templateId;
+    const userId = wx.getStorageSync('user_id');
+    wx.requestSubscribeMessage({
+      tmplIds: [tmplId],
+      success: (res) => {
+        if (res[tmplId] === 'accept') {
+          this.callBackendToSchedule(userId, tmplId);
+        }
+      },
+      complete: () => {
+        this.setData({ showSubscribeModal: false });
+        this.findPlanAndNavigate(userId);
+      }
+    });
+  },
+
+  onCancelSubscribe() {
+    const userId = wx.getStorageSync('user_id');
+    this.setData({ showSubscribeModal: false });
+    this.findPlanAndNavigate(userId);
+  },
+
+  callBackendToSchedule(userId, templateId) {
+    wx.request({
+      url: `${this.data.backendBaseUrl}/api/schedule_notification`,
+      method: 'POST',
+      data: { user_id: userId, template_id: templateId },
+      success: (apiRes) => {
+        console.log('后端订阅成功', apiRes.data);
+        wx.showToast({ title: '订阅成功！' });
+      },
+      fail: (apiErr) => {
+        console.error('后端订阅失败', apiErr);
+      }
+    });
+  },
+
+  findPlanAndNavigate: function(userId) {
+    setTimeout(() => {
+        wx.request({
+            url: `${this.data.backendBaseUrl}/user_recovery_plans/search`,
+            method: 'GET',
+            data: { field: 'user_id', value: userId },
+            success: (planRes) => {
+                if (planRes.statusCode === 200 && planRes.data.length > 0) {
+                  wx.setStorageSync('user_plan_id', planRes.data[0].user_plan_id);
+                }
+            },
+            complete: () => {
+                wx.navigateTo({ url: '/pages/home/home' });
+            }
+        });
+    }, 500);
+  },
+
   handleLogin: function () {
-    console.log('Login link clicked.');
     wx.navigateTo({
       url: '/pages/login/login'
     });
   },
 
-  /**
-   * Lifecycle function--Called when page is initially rendered
-   */
-  onLoad: function (options) {
-
-  },
-
-  /**
-   * Lifecycle function--Called when page is shown
-   */
-  onShow: function () {
-
-  },
-
-  /**
-   * Lifecycle function--Called when page is hidden
-   */
-  onHide: function () {
-
-  },
-
-  /**
-   * Lifecycle function--Called when page is unloaded
-   */
-  onUnload: function () {
-
-  },
-
-  /**
-   * Page event handler function--Called when user drop down
-   */
-  onPullDownRefresh: function () {
-
-  },
-
-  /**
-   * Called when page scroll to the bottom
-   */
-  onReachBottom: function () {
-
-  },
-
-  /**
-   * Called when user click on the top-right button to share
-   */
-  onShareAppMessage: function () {
-
-  }
+  onLoad: function (options) {},
+  onShow: function () {},
+  onHide: function () {},
+  onUnload: function () {},
+  onPullDownRefresh: function () {},
+  onReachBottom: function () {},
+  onShareAppMessage: function () {}
 });
+

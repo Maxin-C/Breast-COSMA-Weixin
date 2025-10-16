@@ -15,6 +15,9 @@ App({
   },
   globalData: {
     userInfo: null,
-    backendBaseUrl: "https://bmi.joyrunmed.com"
+    backendBaseUrl: "https://bmi.joyrunmed.com",
+    templateId: [
+      'GyMG05JSWzuZRImSH7N1x6kx6rd-GlEjyb_mGJZRRQg'
+    ]
   }
 })
