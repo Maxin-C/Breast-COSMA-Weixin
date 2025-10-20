@@ -11,20 +11,20 @@
 
   <view class="card progress-card">
     <view class="progress-text">
-      <text>本周您已完成{{weeklyCompletedSessions}}次训练</text>
-      <text class="percentage">周进度已完成{{weeklyProgressPercentage}}%</text>
+      <text>您在6周实验期内已锻炼{{training_days}}天</text>
+      <text class="percentage">实验进度已完成{{progress_percentage}}%</text>
       <progress
         style="margin-top: 10px;"
-        percent="{{weeklyProgressPercentage}}"
+        percent="{{progress_percentage}}"
         stroke-width="8"
         activeColor="#e2edcc"
         backgroundColor="#e0e0e0"
         borderRadius="4"
-        aria-label="周目标进度{{weeklyProgressPercentage}}%">
+        aria-label="实验进度{{progress_percentage}}%">
       </progress>
     </view>
-
   </view>
+
   <scroll-view class="main-content-scroll" scroll-y="true">
     <view class="card action-card" bind:tap="handleStartTraining">
       <image class="card-image" src="../../components/images/training.jpeg"></image>
@@ -41,15 +41,6 @@
         <text class="card-subtitle">智能助手</text>
       </view>
     </view>
-
-    <view class="card action-card" bind:tap="handleShowVideo">
-      <image class="card-image" src="../../components/images/teaching.jpeg"></image>
-      <view class="card-content">
-        <text class="card-title">教学视频</text>
-        <text class="card-subtitle">护士长</text>
-      </view>
-    </view>
-
   </scroll-view>
 </view>
 
@@ -63,7 +54,10 @@
     <text class="tab-text">上肢锻炼</text>
   </view>
   <view class="tab-item" bind:tap="handleConsult">
-    <image src="../../components/images/consult-active.svg" class="tab-icon"></image>
+    <view class="tab-icon-wrapper">
+      <image src="../../components/images/consult-active.svg" class="tab-icon"></image>
+      <view wx:if="{{showFollowUpRedDot}}" class="red-dot"></view>
+    </view>
     <text class="tab-text">康复咨询</text>
   </view>
   <view class="tab-item" bind:tap="handleViewRecords">

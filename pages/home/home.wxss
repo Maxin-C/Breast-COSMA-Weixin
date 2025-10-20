@@ -98,7 +98,7 @@ page {
 }
 
 .card-image{
-  height: 200px;
+  height: 165px;
   width: 100%;
 }
 
@@ -147,4 +147,48 @@ page {
   width: 30px;
   height: 30px;
   margin-bottom: 4px;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 16px;
+  color: #888;
+}
+.tab-icon-wrapper {
+  position: relative;
+  width: 30px; /* 与图标大小一致 */
+  height: 30px; /* 与图标大小一致 */
+  margin-bottom: 4px;
+}
+
+.tab-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.red-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  background-color: #fa5151;
+  border-radius: 50%;
+  /* border: 1px solid #fff; */
+  animation: blink-animation 1.5s infinite;
+}
+
+/* 新增：定义闪烁动画 */
+@keyframes blink-animation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
 }

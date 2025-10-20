@@ -27,54 +27,58 @@
 }
 .container {
   display: flex;
-  flex-direction: column; /* Stack children vertically */
+  flex-direction: column;
   align-items: center;
-  /* Removed justify-content: center; to allow elements to align to start/end naturally */
-  height: 100vh; /* Use 100vh for full viewport height */
+  height: 100vh;
   background-color: #f0f2f5;
   position: relative;
-  overflow: hidden; /* Prevent overflow issues with camera/video */
+  overflow: hidden;
 }
 
-/* --- Start Screen --- */
-.start-screen {
+/* 新增：训练结束后的初始页面样式 */
+.initial-screen {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
   width: 100%;
-  height: 100%; /* Occupy full container height */
+  height: 100%;
+  padding: 40rpx;
+  box-sizing: border-box;
 }
-
+.initial-message {
+  font-size: 36rpx;
+  color: #555;
+  margin-bottom: 60rpx;
+  text-align: center;
+}
 .start-button {
   width: 60%;
   padding: 20rpx 0;
-  font-size: 36rpx;
-  color: #fff;
-  background-color: #4CAF50; /* Green */
+  font-size: 34rpx;
+  font-weight: bold;
   border-radius: 50rpx;
-  box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #66BB6A, #43A047);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
-/* --- Camera and Video Wrapper --- */
-/* This wrapper holds both camera and video, controlling their shared space and height */
+/* --- Camera and Video styles ... (no changes here) --- */
 .camera-video-wrapper {
   width: 100%;
-  /* Height is set dynamically via inline style in WXML (cameraHeight) */
-  /* e.g., height: {{cameraHeight}}px; */
-  position: relative; /* Crucial for absolute positioning of children */
-  overflow: hidden; /* Ensures children don't overflow */
-  background-color: #000; /* Black background for visual consistency */
-  flex-shrink: 0; /* Prevent this section from shrinking when controls are present */
+  position: relative; 
+  overflow: hidden;
+  background-color: #000;
+  flex-shrink: 0;
 }
-
-/* --- Camera Overlay --- */
 .camera-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark overlay */
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -82,99 +86,113 @@
   text-align: center;
   padding: 40rpx;
   box-sizing: border-box;
-  z-index: 3; /* Ensure overlay is always on top of camera and video */
+  z-index: 3;
 }
-
 .camera-prompt {
   color: #fff;
   font-size: 36rpx;
   margin-bottom: 20rpx;
   line-height: 1.5;
 }
-
 .camera-countdown {
-  color: #ffeb3b; /* Yellow */
+  color: #ffeb3b;
   font-size: 32rpx;
   font-weight: bold;
 }
-
 .guide-box {
   width: 95%;
-  /* 使用 aspect-ratio 保持矩形框的形状 (4:3) */
   aspect-ratio: 4 / 6;
   max-height: 180%;
   border: 3px dashed rgba(255, 255, 255, 0.9);
   border-radius: 15px;
-  margin: 25rpx 0; /* 在文本和框之间添加一些间距 */
+  margin: 25rpx 0;
 }
-
-/* --- Video Player --- */
-/* Video is now absolutely positioned within .camera-video-wrapper */
 .exercise-video {
   width: 100%;
-  height: 100%; /* Fill parent wrapper */
+  height: 100%;
   background-color: #000;
   display: block;
-  /* position, top, left, z-index are handled inline in WXML for dynamic control */
 }
 
+/* 实时反馈样式 */
+.feedback-container {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 12px;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  z-index: 5;
+  animation: fadeIn 0.5s ease-out;
+}
 
-/* --- Controls Container --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.feedback-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.feedback-text {
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
 .controls-container {
   width: 100%;
   padding: 30rpx 40rpx;
   background-color: #fff;
   box-shadow: 0 -2rpx 8rpx rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
-  z-index: 10; /* Ensure controls are above other content */
-  /* This will naturally sit below the camera-video-wrapper due to flex-direction: column on .container */
+  z-index: 10;
 }
-
 .progress-bar {
   width: 100%;
   height: 10rpx;
   background-color: #e0e0e0;
   border-radius: 5rpx;
   margin-bottom: 20rpx;
-  overflow: hidden; /* Ensures indicator stays within bounds */
+  overflow: hidden;
 }
-
 .progress-indicator {
   height: 100%;
-  background-color: #4CAF50; /* Green */
+  background-color: #4CAF50;
   border-radius: 5rpx;
-  transition: width 0.3s ease-out; /* Smooth transition for progress */
+  transition: width 0.3s ease-out;
 }
-
 .progress-text {
   font-size: 28rpx;
   color: #555;
   text-align: center;
   margin-bottom: 30rpx;
-  display: block; /* Ensures it takes full width */
+  display: block;
 }
-
 .button-group {
   display: flex;
   justify-content: space-around;
-  gap: 30rpx; /* Space between buttons */
+  gap: 30rpx;
 }
-
 .control-button {
-  flex: 1; /* Buttons take equal space */
+  flex: 1;
   padding: 15rpx 0;
   font-size: 32rpx;
   border-radius: 40rpx;
-  background-color: #2196F3; /* Blue */
+  background-color: #2196F3;
   color: #fff;
   border: none;
 }
-
 .terminate-button {
-  background-color: #F44336; /* Red */
+  background-color: #F44336;
 }
-
-/* --- Loading Overlay (Optional) --- */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -187,8 +205,162 @@
   justify-content: center;
   z-index: 100;
 }
-
 .loading-text {
   color: #fff;
   font-size: 36rpx;
 }
+
+/* --- Report Screen Styles --- */
+.report-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0rpx 40rpx 40rpx; 
+  box-sizing: border-box;
+}
+
+.report-title {
+  font-size: 44rpx;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 25rpx;
+  flex-shrink: 0;
+}
+
+.scores-list {
+  height: 30vh;
+  width: 100%;
+  background-color: #fff;
+  border-radius: 15px;
+  padding: 20rpx;
+  box-sizing: border-box;
+  margin-bottom: 30rpx;
+  flex-shrink: 0;
+}
+
+.summary-container {
+  height: 35vh;
+  width: 100%;
+  background-color: #fff;
+  border-radius: 15px;
+  padding: 30rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+/* ... (rest of the file is unchanged) ... */
+.score-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 10rpx;
+  border-bottom: 1px solid #f0f0f0;
+}
+.score-item:last-child {
+  border-bottom: none;
+}
+.action-name {
+  font-size: 32rpx;
+  color: #333;
+}
+.star-rating {
+  display: flex;
+  align-items: center;
+}
+.star-icon {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 5rpx;
+}
+.score-text {
+  font-size: 28rpx;
+  color: #888;
+  margin-left: 15rpx;
+}
+
+.summary-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  margin-bottom: 20rpx;
+  flex-shrink: 0;
+}
+
+.summary-content {
+  height: 85%; 
+  word-break: break-all; 
+  white-space: pre-wrap; 
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #555;
+  word-break: break-all;
+}
+
+.loading-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #888;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 8rpx solid #f3f3f3;
+  border-top: 8rpx solid #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.chat-prompt-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 20rpx;
+  flex-shrink: 0;
+}
+
+.chat-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background-color: #4CAF50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+.chat-icon {
+  width: 60rpx;
+  height: 60rpx;
+}
+
+.chat-prompt-text {
+  font-size: 24rpx;
+  color: #888;
+  margin-top: 15rpx;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+

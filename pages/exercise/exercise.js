@@ -1,6 +1,9 @@
 // pages/exercise/exercise.js
 
-// Get the App instance to access global data (获取App实例以访问全局数据)
+// 获取微信的语音合成插件
+const plugin = requirePlugin("WechatSI");
+
+// 获取App实例以访问全局数据
 const app = getApp();
 
 Page({
@@ -11,6 +14,9 @@ Page({
     isPositioned: false,
     isPaused: false,
     showLoading: false,
+    isTrainingFinished: false,
+    initialMessage: '正在加载康复计划...',
+    feedbackText: '', // 新增：用于在界面上显示实时反馈文本
 
     // Camera related (摄像头相关)
     cameraContext: null,
@@ -31,7 +37,10 @@ Page({
     currentActionIndex: 0,
     actionSequence: [],
     currentActionName: '',
-    currentVideoProgress: 0, // 【新增】用于显示当前视频进度
+    currentVideoProgress: 0,
+    actionNameList: ["其他", "握拳松拳", "手腕旋转", "前臂屈伸", "摸肩膀", "摸耳朵", "深呼吸", "梳头", "耸肩", "转体运动", "过顶触耳", "钟摆运动", "爬墙运动", "画圈圈", "滑轮运动", "洗后背运动"],
+    elapsedTime: 0,
+    elapsedTimeTimer: null,
 
     // Progress tracking (进度跟踪)
     totalDemonstrationVideos: 0,
@@ -43,7 +52,7 @@ Page({
     maxSpriteFrames: 6,
 
     // 用于处理单帧数据的隐藏canvas尺寸和节点
-    frameCanvasNode: null, // 【新增】存储canvas节点
+    frameCanvasNode: null,
     frameCanvasContext: null,
     isCanvasReady: false,
     frameCanvasWidth: 360,
@@ -63,13 +72,15 @@ Page({
     isUploadingPositioningFrame: false,
     isUploadingContinuousFrame: false,
     isMonitoringPaused: false,
+    audioContext: null,
 
-    audioContext: null, // 【新增】用于存储音频播放实例
+    evaluationResults: [],
+    summaryReport: '',
+    isSummaryLoading: true,
   },
 
-  /**
-   * 生命周期函数：onLoad
-   */
+  isWaitingForFeedbackLock: false,
+
   onLoad() {
     const sysInfo = wx.getSystemInfoSync();
     this.setData({
@@ -78,33 +89,20 @@ Page({
       backendBaseUrl: app.globalData.backendBaseUrl,
     });
 
-    // 创建CameraContext，注意这里不传递组件ID
     this.data.cameraContext = wx.createCameraContext();
-
-    // 初始化引导音频
     this.initAudioPlayerWithCaching();
-
-    // 初始化相机帧监听器
     this.initCameraListener();
 
     const userId = wx.getStorageSync('user_id');
     if (userId) {
       this.setData({ userId: userId });
+      this.startTrainingProcess();
     } else {
       wx.showToast({ title: '未找到用户ID，请重新登录', icon: 'none', duration: 2000 });
+      this.returnToInitialStage('加载失败，请返回重试。');
     }
-    this.fetchUserRecoveryPlan()
-      .then(() => { this.initializeActionSequence(); })
-      .catch(err => {
-        console.error('获取康复计划失败:', err);
-        this.initializeActionSequence();
-      });
   },
 
-  /**
-   * 生命周期函数：onReady
-   * 确保wxml渲染完毕后再执行一些操作
-   */
   onReady() {
     const query = wx.createSelectorQuery().in(this);
     query.select('#frameCanvas')
@@ -112,18 +110,16 @@ Page({
       .exec((res) => {
         if (res && res[0] && res[0].node) {
           const canvas = res[0].node;
-          const ctx = canvas.getContext('2d'); // 注意这里应该是 '2d' 而不是 'd'
+          const ctx = canvas.getContext('2d');
           
-          // 设置 Canvas 尺寸
           canvas.width = this.data.frameCanvasWidth;
           canvas.height = this.data.frameCanvasHeight;
           
-          // 将获取到的节点和上下文存储起来
           this.setData({
             frameCanvasNode: canvas,
             frameCanvasContext: ctx,
             isCanvasReady: true,
-            isFrameCanvasSizeSet: true // 这里也设置为 true
+            isFrameCanvasSizeSet: true
           });
           console.log('Frame canvas node and context are ready.');
   
@@ -133,9 +129,6 @@ Page({
       });
   },
 
-  /**
-   * 生命周期函数：onUnload
-   */
   onUnload() {
     this.clearAllTimers();
     if (this.data.audioContext) {
@@ -143,60 +136,80 @@ Page({
     }
   },
 
-  /**
-   * 初始化音频播放器，并处理缓存逻辑
-   */
+  clearAllTimers() {
+    if (this.data.audioContext) this.data.audioContext.stop();
+    if (this.data.countdownTimer) clearInterval(this.data.countdownTimer);
+    if (this.data.cameraMonitoringInterval) clearInterval(this.data.cameraMonitoringInterval);
+    if (this.data.elapsedTimeTimer) clearInterval(this.data.elapsedTimeTimer);
+    
+    this.data.countdownTimer = null;
+    this.data.cameraMonitoringInterval = null;
+    this.data.elapsedTimeTimer = null;
+
+    if (this.data.isCapturingAndSendingFrames) {
+      this.stopSpriteSheetCaptureAndSend(false);
+    }
+    this.data.spriteFramesBuffer = [];
+    this.setData({
+      isUploadingPositioningFrame: false,
+      isUploadingContinuousFrame: false,
+    });
+  },
+  
+  startTrainingProcess() {
+    this.setData({ initialMessage: '正在加载您的康复计划...' });
+    this.fetchUserRecoveryPlan()
+      .then(() => this.initializeActionSequence())
+      .then(() => {
+        this.startTraining();
+      })
+      .catch(err => {
+        console.error('初始化训练失败:', err);
+        this.returnToInitialStage('加载康复计划失败，请点击按钮重试。');
+      });
+  },
+
   initAudioPlayerWithCaching() {
     const AUDIO_URL = `${this.data.backendBaseUrl}/static/audios/upper_guidance.mp3`;
-    const STORAGE_KEY = 'cached_audio_path'; // 用于本地存储的 key
+    const STORAGE_KEY = 'cached_audio_path';
     const fs = wx.getFileSystemManager();
     const audioCtx = wx.createInnerAudioContext();
     audioCtx.loop = false;
 
-    // 1. 尝试从本地存储中获取缓存路径
     wx.getStorage({
       key: STORAGE_KEY,
       success: (res) => {
         const savedPath = res.data;
-        // 2. 检查文件是否真实存在
         fs.access({
           path: savedPath,
           success: () => {
-            // 文件存在，直接使用缓存
             console.log('使用已缓存的音频文件:', savedPath);
             audioCtx.src = savedPath;
             this.setData({ audioContext: audioCtx });
           },
           fail: () => {
-            // 文件不存在（可能被清理），重新下载
             console.warn('缓存文件已失效，重新下载。');
             this.downloadAndCacheAudio(AUDIO_URL, STORAGE_KEY, audioCtx, fs);
           }
         });
       },
       fail: () => {
-        // 缓存中没有路径，直接下载
         console.log('未找到音频缓存，开始下载。');
         this.downloadAndCacheAudio(AUDIO_URL, STORAGE_KEY, audioCtx, fs);
       }
     });
   },
 
-  /**
-   * 下载并缓存音频文件的辅助函数
-   */
   downloadAndCacheAudio(url, storageKey, audioCtx, fs) {
     wx.downloadFile({
       url: url,
       success: (res) => {
         if (res.statusCode === 200) {
-          // 3. 将下载的临时文件保存为永久文件
           fs.saveFile({
             tempFilePath: res.tempFilePath,
             success: (saveRes) => {
               const permanentPath = saveRes.savedFilePath;
               console.log('音频下载并缓存成功:', permanentPath);
-              // 4. 更新缓存并设置播放源
               wx.setStorage({ key: storageKey, data: permanentPath });
               audioCtx.src = permanentPath;
               this.setData({ audioContext: audioCtx });
@@ -211,9 +224,6 @@ Page({
     });
   },
 
-  /**
-   * 初始化相机帧数据监听器
-   */
   initCameraListener() {
     if (!this.data.cameraContext) {
       console.error("CameraContext not ready, cannot init listener.");
@@ -223,31 +233,6 @@ Page({
       this.handleCameraFrame(frame);
     });
     console.log("Camera frame listener initialized.");
-  },
-
-  /**
-   * 清除所有定时器和监听器
-   */
-  clearAllTimers() {
-    if (this.data.audioContext) {
-      this.data.audioContext.stop();
-    }
-    if (this.data.countdownTimer) {
-      clearInterval(this.data.countdownTimer);
-      this.data.countdownTimer = null;
-    }
-    if (this.data.cameraMonitoringInterval) {
-      clearInterval(this.data.cameraMonitoringInterval);
-      this.data.cameraMonitoringInterval = null;
-    }
-    if (this.data.isCapturingAndSendingFrames) {
-      this.stopSpriteSheetCaptureAndSend(false);
-    }
-    this.data.spriteFramesBuffer = [];
-    this.setData({
-      isUploadingPositioningFrame: false,
-      isUploadingContinuousFrame: false,
-    });
   },
 
   fetchUserRecoveryPlan() {
@@ -271,47 +256,67 @@ Page({
   },
 
   initializeActionSequence() {
-    const sequence = [];
-    let totalExercises = 5;
-    let demonstrationCount = 0;
-    if (this.data.currentRecoveryPlan) {
-      if (this.data.currentRecoveryPlan.stage === 'stage_one') totalExercises = 9;
-      else if (this.data.currentRecoveryPlan.stage === 'stage_two') totalExercises = 15;
-      // else if (this.data.currentRecoveryPlan.stage === 'stage_three') totalExercises = 1;
-      // else if (this.data.currentRecoveryPlan.stage === 'stage_four') totalExercises = 2;
-      // else if (this.data.currentRecoveryPlan.stage === 'stage_five') totalExercises = 3;
-      // else if (this.data.currentRecoveryPlan.stage === 'stage_six') totalExercises = 5;
-    }
-    const BASE_VIDEO_URL = `${this.data.backendBaseUrl}/static/videos/`;
-    for (let i = 1; i <= totalExercises; i++) {
-      sequence.push({ type: 'explanation', name: `动作${i}讲解`, url: `${BASE_VIDEO_URL}intro/${i}.mp4`, exerciseNumber: i });
-      sequence.push({ type: 'demonstration', name: `动作${i}演示`, url: `${BASE_VIDEO_URL}guide/${i}.mp4`, exerciseNumber: i });
-      demonstrationCount++;
-    }
-    this.setData({ actionSequence: sequence, totalDemonstrationVideos: demonstrationCount });
+    return new Promise((resolve, reject) => {
+      wx.request({
+        url: `${this.data.backendBaseUrl}/user_recovery_plans/${this.data.userId}/exercises`,
+        method: 'GET',
+        success: (res) => {
+          if (res.statusCode === 200 && res.data && res.data.exercise_ids) {
+            const exerciseIds = res.data.exercise_ids;
+            const sequence = [];
+            let demonstrationCount = 0;
+            const BASE_VIDEO_URL = `${this.data.backendBaseUrl}/static/videos/`;
+            exerciseIds.forEach(id => {
+              sequence.push({ type: 'explanation', name: `动作${id}讲解`, url: `${BASE_VIDEO_URL}intro/${id}.mp4`, exerciseNumber: id });
+              sequence.push({ type: 'demonstration', name: this.data.actionNameList[id], url: `${BASE_VIDEO_URL}guide/${id}.mp4`, exerciseNumber: id });
+              demonstrationCount++;
+            });
+            this.setData({ actionSequence: sequence, totalDemonstrationVideos: demonstrationCount });
+            resolve();
+          } else {
+            console.error('获取动作列表失败:', res);
+            wx.showToast({ title: '无法获取训练动作列表', icon: 'none' });
+            reject(new Error('Failed to fetch exercise IDs'));
+          }
+        },
+        fail: (err) => {
+          console.error('请求动作列表失败:', err);
+          wx.showToast({ title: '网络错误，无法获取动作列表', icon: 'none' });
+          reject(err);
+        }
+      });
+    });
   },
 
   startTraining() {
-    if (!this.data.currentRecoveryPlan) {
-      wx.showToast({ title: '请先获取康复计划信息', icon: 'none', duration: 2000 });
-      return;
+    if (this.data.isTrainingStarted) {
+        return;
     }
+
     wx.request({
       url: `${this.data.backendBaseUrl}/api/recovery_records/start`,
       method: 'POST',
       data: { user_id: this.data.userId, plan_id: this.data.currentRecoveryPlan.plan_id },
       success: (res) => {
         if (res.data && res.data.record_id) {
-          this.setData({ currentRecordId: res.data.record_id, isTrainingStarted: true, }, () => {
+          this.setData({ 
+            currentRecordId: res.data.record_id, 
+            isTrainingStarted: true,
+            isTrainingFinished: false,
+            evaluationResults: [],
+            summaryReport: '',
+          }, () => {
             this.startPositioningCheck();
           });
         } else {
           wx.showToast({ title: '创建训练记录失败', icon: 'none', duration: 2000 });
+          this.returnToInitialStage('无法创建训练记录，请重试。');
         }
       },
       fail: (err) => {
         console.error('创建恢复记录失败:', err);
         wx.showToast({ title: '网络错误，无法开始训练', icon: 'none', duration: 2000 });
+        this.returnToInitialStage('网络错误，请点击按钮重试。');
       }
     });
   },
@@ -394,6 +399,9 @@ Page({
       url: `${this.data.backendBaseUrl}/detect_upper_body`,
       filePath: imagePath,
       name: 'image',
+      formData: {
+        'user_id': this.data.userId.toString()
+      },
       success: (res) => {
         if (res && res.data) {
           const data = JSON.parse(res.data);
@@ -454,35 +462,49 @@ Page({
     });
   },
 
-  returnToInitialStage(message = '训练已返回初始界面。') {
+  returnToInitialStage(message = '训练已终止。') {
     this.clearAllTimers();
-    wx.showToast({ title: message, icon: 'none', duration: 2000 });
     this.setData({
-      currentRecordId: null, isTrainingStarted: false, isCameraVisibleForUser: false,
-      isPositioned: false, isPaused: false, currentVideoUrl: '', currentActionIndex: 0,
-      totalProgressPercentage: 0, completedDemonstrationVideos: 0, videoPlayer: null,
-      isCapturingAndSendingFrames: false, isSpriteCanvasDimensionsSet: false,
-      spriteSheetCanvasWidth: 0, spriteSheetCanvasHeight: 0, isFrameCanvasSizeSet: false,
+      initialMessage: message,
+      isTrainingStarted: false,
+      isTrainingFinished: false,
+      currentRecordId: null,
+      isCameraVisibleForUser: false,
+      isPositioned: false,
+      isPaused: false,
+      currentVideoUrl: '',
+      currentActionIndex: 0,
+      totalProgressPercentage: 0,
+      completedDemonstrationVideos: 0,
+      videoPlayer: null,
+      isCapturingAndSendingFrames: false,
     });
   },
 
   playNextVideo() {
-    if (this.data.currentActionIndex >= this.data.actionSequence.length) {
-      this.returnToInitialStage('恭喜您，训练已完成！');
+    const nextAction = this.data.actionSequence[this.data.currentActionIndex];
+
+    if (!nextAction) {
+      this.handleTrainingCompletion();
       return;
     }
-    const nextAction = this.data.actionSequence[this.data.currentActionIndex];
+
     const shouldCaptureFrames = (nextAction.type === 'demonstration');
     this.setData({
-      showLoading: true, currentVideoUrl: nextAction.url, currentActionName: nextAction.name,
+      showLoading: true,
+      currentVideoUrl: nextAction.url,
+      currentActionName: nextAction.name,
+      feedbackText: '', // 清空上一条反馈
     }, () => {
       if (!this.data.videoPlayer) this.data.videoPlayer = wx.createVideoContext('exerciseVideo');
       if (!this.data.isPaused) this.data.videoPlayer.play();
 
       if (shouldCaptureFrames && !this.data.isPaused) {
         this.stopCameraMonitoring();
+        this.startElapsedTimeTimer();
         this.startSpriteSheetCaptureAndSend();
       } else {
+        this.stopElapsedTimeTimer();
         this.stopSpriteSheetCaptureAndSend(false);
         if (!this.data.isPaused) {
           this.startCameraMonitoring(this.sendFrameToBackendForContinuousCheck, 1000);
@@ -492,24 +514,31 @@ Page({
       }
     });
   },
+  
+  startElapsedTimeTimer() {
+    if (this.data.elapsedTimeTimer) clearInterval(this.data.elapsedTimeTimer);
+    this.setData({ elapsedTime: 0 });
+    this.data.elapsedTimeTimer = setInterval(() => {
+      this.setData({ elapsedTime: this.data.elapsedTime + 1 });
+    }, 1000);
+  },
+
+  stopElapsedTimeTimer() {
+    if (this.data.elapsedTimeTimer) clearInterval(this.data.elapsedTimeTimer);
+    this.data.elapsedTimeTimer = null;
+    this.setData({ elapsedTime: 0 });
+  },
 
   onVideoPlay() { this.setData({ showLoading: false }); },
   onVideoWaiting() { this.setData({ showLoading: true }); },
   onVideoError(e) { console.error('Video playback error:', e.detail); },
 
-  /**
-   * 新增：处理已完成动作的视频。
-   * 调用后端API，将捕获的雪碧图拼接成视频。
-   * @param {number} exerciseId - 已完成的动作ID (即 exerciseNumber)
-   */
   processVideoForCompletedAction: function (exerciseId) {
     const recordId = this.data.currentRecordId;
-
     if (!recordId || !exerciseId) {
       console.error('缺少 record_id 或 exercise_id，无法处理视频。');
       return;
     }
-
     wx.request({
       url: `${this.data.backendBaseUrl}/api/process_exercise_video`,
       method: 'POST',
@@ -530,25 +559,29 @@ Page({
     });
   },
 
-  onVideoEnded() {
+  async onVideoEnded() {
     this.stopSpriteSheetCaptureAndSend(true);
     this.stopCameraMonitoring();
+    this.stopElapsedTimeTimer();
     
     const finishedAction = this.data.actionSequence[this.data.currentActionIndex];
-    
+  
     if (finishedAction && finishedAction.type === 'demonstration') {
+      await this.processAndEvaluateAction(finishedAction.exerciseNumber, finishedAction.name);
       this.setData({ completedDemonstrationVideos: this.data.completedDemonstrationVideos + 1 });
-      this.processVideoForCompletedAction(finishedAction.exerciseNumber);
+    }
+
+    this.updateOverallProgress();
+
+    if (this.data.completedDemonstrationVideos >= this.data.totalDemonstrationVideos) {
+      this.handleTrainingCompletion();
+      return;
     }
 
     this.setData({ currentActionIndex: this.data.currentActionIndex + 1 });
-    this.updateOverallProgress();
     this.playNextVideo();
   },
 
-  /**
-   * 【新增】处理视频时间更新事件
-   */
   onVideoTimeUpdate(e) {
     const { currentTime, duration } = e.detail;
     if (duration > 0) {
@@ -570,9 +603,11 @@ Page({
         if (this.data.videoPlayer) this.data.videoPlayer.pause();
         this.stopCameraMonitoring();
         this.stopSpriteSheetCaptureAndSend(true);
+        if (this.data.elapsedTimeTimer) clearInterval(this.data.elapsedTimeTimer);
         this.setData({ isCameraVisibleForUser: true });
       } else {
         if (this.data.videoPlayer) this.data.videoPlayer.play();
+        this.startElapsedTimeTimer();
         this.setData({ isMonitoringPaused: true });
         setTimeout(() => {
           this.setData({ isMonitoringPaused: false });
@@ -629,6 +664,7 @@ Page({
             if (this.data.videoPlayer) this.data.videoPlayer.stop();
             this.stopCameraMonitoring();
             this.stopSpriteSheetCaptureAndSend(false);
+            this.stopElapsedTimeTimer();
             this.updateOverallProgress();
             this.playNextVideo();
           });
@@ -637,9 +673,107 @@ Page({
     });
   },
 
-  // =================================================================
-  // 【核心修改区域】使用 CameraFrameListener 重构帧捕获逻辑
-  // =================================================================
+  processAndEvaluateAction(exerciseId, actionName) {
+    return new Promise((resolve) => {
+        const recordId = this.data.currentRecordId;
+        if (!recordId || !exerciseId) {
+            console.error('缺少 record_id 或 exercise_id，无法处理视频。');
+            return resolve();
+        }
+
+        wx.request({
+            url: `${this.data.backendBaseUrl}/reports/evaluate`,
+            method: 'POST',
+            data: {
+                record_id: recordId,
+                exercise_id: exerciseId
+            },
+            success: (res) => {
+                if (res.statusCode === 201 && res.data.success) {
+                    console.log(`动作 ${exerciseId} 评估成功`, res.data.evaluation);
+                    const evaluation = JSON.parse(res.data.evaluation);
+                    const newResult = {
+                        exerciseId: exerciseId,
+                        actionName: actionName,
+                        score: Number(evaluation.score),
+                        report: evaluation.report
+                    };
+                    this.setData({
+                        evaluationResults: [...this.data.evaluationResults, newResult]
+                    });
+                } else {
+                    console.error(`动作 ${exerciseId} 评估失败`, res.data);
+                    const newResult = { exerciseId, actionName, score: 0, report: "评估失败，请稍后重试。" };
+                    this.setData({ evaluationResults: [...this.data.evaluationResults, newResult] });
+                }
+            },
+            fail: (err) => {
+                console.error('评估请求网络错误:', err);
+                const newResult = { exerciseId, actionName, score: 0, report: "网络错误，评估失败。" };
+                this.setData({ evaluationResults: [...this.data.evaluationResults, newResult] });
+            },
+            complete: () => {
+                wx.hideLoading();
+                resolve();
+            }
+        });
+    });
+  },
+
+  handleTrainingCompletion() {
+    console.log("训练完成，正在停止所有摄像头活动...");
+    this.stopFrameListener(); 
+    this.clearAllTimers();
+    
+    this.setData({ isTrainingFinished: true });
+    
+    this.data.evaluationResults.sort((a, b) => a.exerciseId - b.exerciseId);
+    this.setData({
+      evaluationResults: this.data.evaluationResults
+    });
+    
+    this.fetchSummaryReport();
+  },
+
+  stopFrameListener() {
+    if (this.data.cameraListener) {
+      this.data.cameraListener.stop();
+    }
+    this.setData({ 
+      isCapturingAndSendingFrames: false 
+    });
+  },
+
+  fetchSummaryReport() {
+    const recordId = this.data.currentRecordId;
+    if (!recordId) return;
+
+    this.setData({ isSummaryLoading: true });
+    wx.request({
+      url: `${this.data.backendBaseUrl}/reports/${recordId}/summarize`,
+      method: 'POST',
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.success) {
+          this.setData({ summaryReport: res.data.summary });
+        } else {
+          this.setData({ summaryReport: '生成综合报告失败，请稍后重试。' });
+        }
+      },
+      fail: (err) => {
+        console.error('获取综合报告失败:', err);
+        this.setData({ summaryReport: '网络错误，无法获取综合报告。' });
+      },
+      complete: () => {
+        this.setData({ isSummaryLoading: false });
+      }
+    });
+  },
+
+  redirectToChat() {
+    wx.redirectTo({
+      url: '/pages/chat/chat'
+    });
+  },
 
   startSpriteSheetCaptureAndSend() {
     if (this.data.isCapturingAndSendingFrames) return;
@@ -648,7 +782,6 @@ Page({
       return;
     }
     
-    // 确保 Canvas 已就绪
     if (!this.data.isCanvasReady) {
       console.error("Canvas 未就绪，无法开始帧捕获");
       return;
@@ -682,7 +815,6 @@ Page({
   },
 
   handleCameraFrame(frame) {
-    // 增加 Canvas 就绪状态的判断
     if (!this.data.isCapturingAndSendingFrames || !this.data.isCanvasReady) {
       return;
     }
@@ -697,10 +829,8 @@ Page({
     const canvas = this.data.frameCanvasNode;
     const ctx = this.data.frameCanvasContext;
   
-    // 确保 Canvas 尺寸与帧数据匹配
     if (canvas.width !== frame.width || canvas.height !== frame.height) {
-      // 降低分辨率以减少文件大小
-      const scaleFactor = 0.6; // 降低到原尺寸的60%
+      const scaleFactor = 0.6; 
       canvas.width = Math.floor(frame.width * scaleFactor);
       canvas.height = Math.floor(frame.height * scaleFactor);
       this.setData({
@@ -710,7 +840,6 @@ Page({
     }
   
     try {
-      // 创建缩小尺寸的图像数据
       const scaleFactor = 0.6;
       const scaledWidth = Math.floor(frame.width * scaleFactor);
       const scaledHeight = Math.floor(frame.height * scaleFactor);
@@ -718,20 +847,17 @@ Page({
       const tempCanvas = wx.createOffscreenCanvas({ type: '2d', width: frame.width, height: frame.height });
       const tempCtx = tempCanvas.getContext('2d');
       
-      // 先将完整帧数据绘制到临时canvas
       const imageData = tempCtx.createImageData(frame.width, frame.height);
       imageData.data.set(new Uint8ClampedArray(frame.data));
       tempCtx.putImageData(imageData, 0, 0);
       
-      // 然后缩小到主canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(tempCanvas, 0, 0, frame.width, frame.height, 0, 0, canvas.width, canvas.height);
       
-      // 转换为临时文件路径，降低质量
       wx.canvasToTempFilePath({
         canvas: canvas,
         fileType: 'jpg',
-        quality: 0.4, // 进一步降低质量
+        quality: 0.4,
         success: (fileRes) => {
           this.data.spriteFramesBuffer.push(fileRes.tempFilePath);
           if (this.data.spriteFramesBuffer.length >= this.data.maxSpriteFrames) {
@@ -752,10 +878,6 @@ Page({
     const framesToSend = this.data.spriteFramesBuffer.splice(0, this.data.maxSpriteFrames);
     if (framesToSend.length === 0) return;
     
-    // if (framesToSend.length > 0) {
-    //     this.sendFrameToBackendForContinuousCheck(framesToSend[0]);
-    // }
-
     const currentAction = this.data.actionSequence[this.data.currentActionIndex];
     const actionCategory = currentAction ? currentAction.exerciseNumber : 'unknown';
     this.sendSpriteSheetToBackend(framesToSend, actionCategory);
@@ -764,8 +886,7 @@ Page({
   sendSpriteSheetToBackend(spriteSheetImagePaths, actionCategory) {
     if (spriteSheetImagePaths.length === 0) return;
     
-    // 减少雪碧图尺寸
-    const scaleFactor = 0.5; // 缩小50%
+    const scaleFactor = 0.5;
     const cols = 3, rows = 2;
     const originalFrameWidth = this.data.spriteSheetCanvasWidth / cols;
     const originalFrameHeight = this.data.spriteSheetCanvasHeight / rows;
@@ -786,7 +907,6 @@ Page({
         const canvas = res[0].node;
         const ctx = canvas.getContext('2d');
         
-        // 使用缩小后的尺寸
         canvas.width = scaledWidth;
         canvas.height = scaledHeight;
         ctx.clearRect(0, 0, scaledWidth, scaledHeight);
@@ -800,10 +920,10 @@ Page({
           if (loadedImagesCount === imagesToLoad) {
             wx.canvasToTempFilePath({
               canvas: canvas,
-              quality: 0.3, // 大幅降低质量
+              quality: 0.3,
               fileType: 'jpg',
               success: (res) => {
-                this.uploadSingleSpriteSheet(res.tempFilePath, actionCategory, imagesToLoad);
+                this.uploadSingleSpriteSheet(res.tempFilePath, actionCategory);
               },
               fail: (err) => console.error('Failed to generate sprite sheet:', err)
             }, this);
@@ -833,25 +953,95 @@ Page({
       });
   },
 
-  uploadSingleSpriteSheet(spriteSheetPath, actionCategory, frameCount) {
+  uploadSingleSpriteSheet(spriteSheetPath, actionCategory) {
+    if (this.data.isPaused) {
+      console.log("Upload skipped: Paused.");
+      return;
+    }
+
     wx.uploadFile({
-      url: `${this.data.backendBaseUrl}/upload_sprite_sheet`,
+      url: `${this.data.backendBaseUrl}/reports/upload_sprites`,
       filePath: spriteSheetPath,
-      name: 'sprite_sheet',
+      name: 'files',
       formData: {
-          'actionCategory': actionCategory,
-          'frame_count': frameCount.toString(),
-          'record_id': this.data.currentRecordId
+        'exercise_id': actionCategory.toString(),
+        'record_id': this.data.currentRecordId.toString(),
+        'elapsed_time': this.data.elapsedTime.toString(),
+        // 传递锁的状态给后端
+        'is_waiting_for_feedback': this.isWaitingForFeedbackLock.toString()
       },
       success: (res) => {
-        if (res.statusCode === 200) {
+        if (res.statusCode === 201) {
           console.log('Sprite sheet uploaded successfully.');
+          try {
+            const data = JSON.parse(res.data);
+            if (data && data.feedback) {
+              // 收到反馈，设置锁，并进行处理
+              this.isWaitingForFeedbackLock = true;
+              this.handleRealtimeFeedback(data.feedback);
+            }
+          } catch (e) {
+            console.error('Error parsing feedback response:', e);
+            this.isWaitingForFeedbackLock = false;
+          }
         } else {
-          console.error(`Sprite sheet upload failed with status ${res.statusCode}`);
+          console.error(`Sprite sheet upload failed with status ${res.statusCode}:`, res.data);
+          this.isWaitingForFeedbackLock = false;
         }
       },
       fail: (err) => {
         console.error('Sprite sheet upload failed (network):', err);
+      },
+      complete: () => {
+        this.isWaitingForFeedbackLock = false;
+      }
+    });
+  },
+  
+  handleRealtimeFeedback(text) {
+    if (!text || text.trim() === "") {
+      this.isWaitingForFeedbackLock = false;
+      return;
+    }
+    
+    // 检查是否是特定提示语
+    if (text.includes("未找到可分析的动作图片")) {
+      text = "请您跟着视频一起锻炼吧";
+    } else if (text.toLowerCase().includes("error") || text.includes("失败") || text.includes("错误")) {
+      console.error("Received error feedback from backend:", text);
+      this.isWaitingForFeedbackLock = false;
+      return; // 不显示不播报
+    }
+
+    console.log("收到实时反馈:", text);
+    this.setData({ feedbackText: text });
+
+    plugin.textToSpeech({
+      lang: "zh_CN",
+      tts: true,
+      content: text,
+      success: (res) => {
+        const innerAudioContext = wx.createInnerAudioContext();
+        innerAudioContext.autoplay = true;
+        innerAudioContext.src = res.filename;
+        innerAudioContext.onPlay(() => console.log('开始播放反馈语音'));
+        innerAudioContext.onError((res) => {
+          console.error('播放失败', res.errMsg);
+          this.isWaitingForFeedbackLock = false;
+        });
+        innerAudioContext.onEnded(() => {
+          console.log('反馈语音播放结束');
+          this.isWaitingForFeedbackLock = false;
+          setTimeout(() => {
+            if (this.data.feedbackText === text) {
+              this.setData({ feedbackText: '' });
+            }
+          }, 1500);
+        });
+      },
+      fail: (res) => {
+        console.error("语音合成失败", res);
+        this.isWaitingForFeedbackLock = false;
       }
     });
   },
@@ -874,7 +1064,8 @@ Page({
     }
   },
 
-  handleHome: function () {
-    wx.navigateTo({ url: '/pages/home/home' });
+  handleHome() {
+    wx.redirectTo({ url: '/pages/home/home' });
   },
 });
+

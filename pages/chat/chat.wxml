@@ -1,4 +1,4 @@
-<view class="chat-container">
+<view class="chat-container" style="padding-bottom: {{keyboardHeight}}px;">
   <view class="nav-bar">
     <image class="nav-back-icon" src="../../components/images/back-arrow.svg" mode="aspectFit" bind:tap="handleHome"></image>
     <view class="nav-contact">
@@ -10,19 +10,82 @@
     </view>
   </view>
 
-  <scroll-view class="chat-body" scroll-y="true" scroll-top="{{scrollTop}}" style="position: relative; left: 0rpx; top: 164rpx; height: 1310rpx; display: block; box-sizing: border-box">
+  <scroll-view 
+    class="chat-body" 
+    scroll-y="true" 
+    style="height: {{scrollViewHeight}}px;"
+scroll-into-view="{{intoView}}">
+    
     <view class="time-tag">今日 {{currentTime}}</view>
-    <block wx:for="{{messages}}" wx:key="message_id">
-      <view id="msg-{{item.message_id}}" class="message-item {{item.sender_type === 'user' ? 'sent' : 'received'}}">
-        <view class="message-bubble">
-          <text class="message-content">{{item.message_text}}</text>
+    
+    <block wx:for="{{messages}}" wx:key="index">
+      <view id="msg-{{index}}">
+        <view wx:if="{{!item.type}}" class="message-item {{item.sender_type === 'user' ? 'sent' : 'received'}}">
+          <view class="message-bubble">
+            <text class="message-content">{{item.message_text}}</text>
+            <image 
+              wx:if="{{item.sender_type !== 'user'}}"
+              class="speaker-icon" 
+              src="../../components/images/speaker-icon.svg" 
+              mode="aspectFit"
+              bind:tap="handlePlayText"
+              data-text="{{item.message_text}}"
+            ></image>
+          </view>
+        </view>
+
+                <view wx:if="{{item.type === 'loading'}}" class="message-item received">
+          <view class="message-bubble loading-bubble">
+            <view class="dot"></view><view class="dot"></view><view class="dot"></view>
+          </view>
+        </view>
+        
+        <view wx:if="{{item.type === 'result'}}" class="message-item received">
+          <view class="message-bubble result-card">
+            <view class="result-title">随访结果评估</view>
+          <view class="result-table">
+              <view class="table-header">
+                <view class="table-cell">评估项目</view>
+                <view class="table-cell score">得分</view>
+              </view>
+              <block wx:for="{{item.data}}" wx:for-item="resultItem" wx:key="module_name">
+                <view class="table-row">
+                  <view class="table-cell">{{resultItem.module_name}}</view>
+                  <view class="table-cell score">{{resultItem.value}}</view>
+                </view>
+              </block>
+            </view>
+          </view>
         </view>
       </view>
     </block>
+    <view id="chat-anchor" style="height: 0;"></view>
   </scroll-view>
 
   <view class="input-bar">
-    <input class="input-field" placeholder="请在这里输入您的问题..." value="{{inputValue}}" bindinput="handleInput"  adjust-position="{{true}}"/>
-    <image class="send-icon" src="../../components/images/send-plane.svg" mode="aspectFit" bindtap="handleSend"></image>
+    <view class="record-button" bind:longpress="handleRecordStart" bind:touchend="handleRecordEnd">
+      <block wx:if="{{!isRecording}}">按住 说话</block>
+      <block wx:else>松开 识别</block>
+    </view>
+    
+    <view class="input-area">
+      <textarea 
+        class="input-field" 
+        placeholder="请在这里输入您的问题..." 
+        value="{{inputValue}}" 
+        bindinput="handleInput"
+        auto-height
+        maxlength="-1"
+        show-confirm-bar="{{false}}"
+        adjust-position="{{false}}"  style="max-height: 96px;"
+      ></textarea>
+      
+      <view class="send-button" bindtap="handleSend">
+        <image class="send-icon" src="../../components/images/send-plane.svg" mode="aspectFit"></image>
+      </view>
+    </view>
   </view>
+
+  <view class="modal-mask" wx:if="{{ showFollowupModal }}">
+      </view>
 </view>

@@ -8,41 +8,34 @@
     <view class="session-status">
     </view>
 
-    <view class="section-title">日程记录</view>
+    <view class="section-title">锻炼次数记录</view>
     <view class="calendar">
       <calendar id="calendar" marks="{{markers}}" i-class="calendar-custom-class" view="month" view-gesture="{{ false }}" areas="{{ ['header', 'title', 'subinfo', 'today'] }}" 
       vibrate="{{false}}"
-      style="--wc-primary: #DCE6D0;  --wc-checked-bg-light: #DCE6D0; --wc-checked-today-bg-light: #DCE6D0; --wc-checked-color-light: #333333; --wc-checked-today-color-light: #333333; --wc-schedule-color-light: #A5B892; --wc-schedule-bg-light: rgba(220, 230, 208, 0.2); --wc-today-color-light: #A5B892; --wc-checked-bg-dark: #DCE6D0;--wc-checked-today-bg-dark: #DCE6D0;--wc-checked-color-dark: #333333;--wc-checked-today-color-dark: #333333; --wc-date-size: 30rpx;"/>
+      style="--wc-primary: #DCE6D0; --wc-checked-bg-light: #DCE6D0; --wc-checked-today-bg-light: #DCE6D0; --wc-checked-color-light: #333333; --wc-checked-today-color-light: #333333; --wc-schedule-color-light: #A5B892; --wc-schedule-bg-light: rgba(220, 230, 208, 0.2); --wc-today-color-light: #A5B892; --wc-checked-bg-dark: #DCE6D0; --wc-checked-today-bg-dark: #DCE6D0; --wc-checked-color-dark: #333333; --wc-checked-today-color-dark: #333333; --wc-date-size: 30rpx;"/>
     </view>
 
     <view class="section-title">训练小结</view>
     <view class="stats-grid">
-      <view class="stat-item highlight">
+      <view class="stat-item.highlight">
         <image src="../../components/images/running.svg" class="stat-icon"></image>
         <view class="stat-info">
-          <text class="stat-label">锻炼总次数</text>
-          <text class="stat-value">{{totalExerciseCount}}</text>
+          <text class="stat-label">锻炼总天数</text>
+          <text class="stat-value">{{totalTrainingDays}}</text>
         </view>
       </view>
-      <view class="stat-item">
-        <image src="../../components/images/clock.svg" class="stat-icon"></image>
-        <view class="stat-info">
-          <text class="stat-label">平均时长</text>
-          <text class="stat-value">{{averageDuration}}</text>
-        </view>
-      </view>
-      <view class="stat-item">
+      <view class="stat-item.highlight">
         <image src="../../components/images/bell.svg" class="stat-icon"></image>
         <view class="stat-info">
           <text class="stat-label">AI动作评估</text>
-          <text class="stat-value">{{aiEvaluation}}</text>
+          <text class="stat-value">{{aiEvaluation}}/10</text>
         </view>
       </view>
-      <view class="stat-item">
+      <view class="stat-item.highlight">
         <image src="../../components/images/heart.svg" class="stat-icon"></image>
         <view class="stat-info">
           <text class="stat-label">生活质量</text>
-          <text class="stat-value">{{qualityOfLife}}</text>
+          <text class="stat-value">{{qualityOfLife}}/144</text>
         </view>
       </view>
     </view>
@@ -59,7 +52,10 @@
       <text class="tab-text">上肢锻炼</text>
     </view>
     <view class="tab-item" bind:tap="handleConsult">
-      <image src="../../components/images/consult-active.svg" class="tab-icon"></image>
+      <view class="tab-icon-wrapper">
+        <image src="../../components/images/consult-active.svg" class="tab-icon"></image>
+        <view wx:if="{{showFollowUpRedDot}}" class="red-dot"></view>
+      </view>
       <text class="tab-text">康复咨询</text>
     </view>
     <view class="tab-item">

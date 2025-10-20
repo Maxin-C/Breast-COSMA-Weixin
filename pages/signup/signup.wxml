@@ -1,74 +1,58 @@
 <view class="container">
-
-<view class="illustration-container">
-  <image class="illustration-image" src="../../components/images/welcome-icon.png" mode="aspectFit"></image>
-</view>
-
-<view class="text-section">
-  <text class="title">欢迎使用</text>
-  <text class="subtitle">乳腺癌术后康复助手</text>
-</view>
-
-<view class="input-group">
-  <text class="input-label">姓名 *</text>
-  <view class="input-box">
-    <input
-      class="input-field"
-      type="text"
-      placeholder="张三"
-      placeholder-style="color: #999;"
-      bindinput="handleNameInput"
-    />
-  </view>
-</view>
-
-<view class="input-group">
-  <text class="input-label">编号 *</text>
-  <view class="input-box">
-    <input
-      class="input-field"
-      type="number"
-      placeholder="请输入您的编号" placeholder-style="color: #999;"
-      bindinput="handleSerialNumberInput" />
-  </view>
-</view>
-
-<view class="input-group">
-  <text class="input-label">是否拔管 *</text>
-  <radio-group class="radio-group" bindchange="handleDrainageChange">
-    <label class="radio">
-      <radio value="true" checked="{{isDrainageRemoved === true}}"/> 是
-    </label>
-    <label class="radio">
-      <radio value="false" checked="{{isDrainageRemoved === false}}"/> 否
-    </label>
-  </radio-group>
-</view>
-<view class="button-container">
-  <button class="signup-btn" bindtap="handleSignUp">注册</button>
-</view>
-
-<view class="login-section">
-  <text class="new-member-text">已经注册账户?</text>
-  <text class="login-link" bindtap="handleLogin">点击登录</text>
-</view>
-
-<view wx:if="{{showSubscribeButton}}" class="subscribe-section">
-    <view class="subscribe-tip">登录成功！开启每日提醒服务</view>
-    <button type="primary" bindtap="handleSubscribe">开启消息提醒</button>
-    <button plain bindtap="handleSkipSubscribe">暂不开启</button>
+  <view class="illustration-container">
+    <image class="illustration-image" src="../../components/images/welcome-icon.png" mode="aspectFit"></image>
   </view>
 
-  <view class="modal-mask" wx:if="{{ showSubscribeModal }}">
-    <view class="modal-container">
-      <view class="modal-title">订阅康复提醒</view>
-      <view class="modal-content">
-        为了更好地跟进您的康复计划，我们将在明天上午8点向您发送一条训练提醒。
-      </view>
-      <view class="modal-actions">
-        <button class="action-btn cancel-btn" bindtap="onCancelSubscribe">以后再说</button>
-        <button class="action-btn confirm-btn" bindtap="onConfirmSubscribe">好的</button>
-      </view>
+  <view class="text-section">
+    <text class="title">请使用入组患者手机注册</text>
+    <text class="subtitle">乳腺癌术后康复助手</text>
+  </view>
+
+  <view class="input-group">
+    <text class="input-label">姓名 *</text>
+    <view class="input-box">
+      <input
+        class="input-field"
+        type="text"
+        placeholder="请输入您的真实姓名"
+        placeholder-style="color: #999;"
+        bindinput="handleNameInput"
+      />
     </view>
   </view>
+
+  <view class="input-group">
+    <text class="input-label">手术时间 *</text>
+    <view class="input-box">
+      <picker mode="date" class="date-picker" value="{{surgeryDate}}" end="{{endDate}}" bindchange="handleDateChange">
+        <view class="picker-content">
+          <text class="{{surgeryDate ? '' : 'placeholder'}}">{{surgeryDate || '请选择您的手术日期'}}</text>
+          <text class="picker-arrow">›</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="input-group">
+    <text class="input-label">护士编号 *</text>
+    <view class="input-box">
+      <input
+        class="input-field"
+        type="number"
+        placeholder="请输入为您注册的护士编号"
+        placeholder-style="color: #999;"
+        bindinput="handleNurseIdInput"
+      />
+    </view>
+  </view>
+
+  <view class="button-container">
+    <button class="signup-btn" bindtap="handleSignUp">注册</button>
+  </view>
+
+  <view class="login-section">
+    <text class="new-member-text">已经注册账户?</text>
+    <text class="login-link" bindtap="handleLogin">点击登录</text>
+  </view>
+
 </view>

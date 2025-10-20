@@ -128,6 +128,7 @@
   text-decoration: underline;
 }
 
+/* Modal styles */
 .modal-mask {
   position: fixed;
   top: 0;
@@ -160,11 +161,26 @@
   font-size: 28rpx;
   color: #666;
   margin-bottom: 40rpx;
+  text-align: center; /* 确保文字居中 */
+}
+
+/* --- 新增：弹窗内的单选框样式 --- */
+.radio-group-modal {
+  display: flex;
+  justify-content: space-around;
+  padding: 20rpx 0;
+  font-size: 30rpx; /* 调整字体大小使其更清晰 */
 }
 
 .modal-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* 两个按钮时 */
+}
+
+/* 当只有一个按钮时，让它居中 */
+.modal-actions .confirm-btn:only-child {
+  flex: 1;
+  margin: 0 40rpx; /* 左右留些边距 */
 }
 
 .action-btn {

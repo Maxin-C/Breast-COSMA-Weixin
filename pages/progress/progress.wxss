@@ -125,8 +125,8 @@ page {
 }
 
 .stat-icon {
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
   margin-right: 10px;
 }
 
@@ -136,12 +136,12 @@ page {
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 18px;
   color: #666;
 }
 
 .stat-value {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -201,4 +201,29 @@ page {
   width: 30px;
   height: 30px;
   margin-bottom: 4px;
+}
+
+.red-dot {
+  position: absolute;
+  top: 4px;
+  right: 140px;
+  width: 12px;
+  height: 12px;
+  background-color: #fa5151;
+  border-radius: 50%;
+  /* border: 1px solid #fff; */
+  animation: blink-animation 1.5s infinite;
+}
+
+/* 新增：定义闪烁动画 */
+@keyframes blink-animation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
 }

@@ -1,43 +1,259 @@
-// pages/chat/chat.js
 const app = getApp();
+const MAX_MESSAGES_TO_RENDER = 25;
+const plugin = requirePlugin("WechatSI");
+const recorderManager = plugin.getRecordRecognitionManager();
 
 Page({
   data: {
     messages: [],
     inputValue: '',
-    scrollTop: 0,
-    conversationId: null, // 初始为null，等待API返回
-    userId: 1, // 实际应用中应从全局状态获取
+    intoView: 'chat-anchor', // 【新增】滚动目标ID
+    scrollViewHeight: 0, // 【新增】用于控制scroll-view的高度
+    keyboardHeight: 0, // 【新增】用于存储键盘高度
+    conversationId: null,
+    userId: null,
     isLoading: false,
-    backendBaseUrl: app.globalData.backendBaseUrl
+    backendBaseUrl: app.globalData.backendBaseUrl,
+    currentTime: '',
+    mode: 'consult',
+    showFollowupModal: false,
+    isFollowupCompleted: false,
+    isRecording: false
   },
 
-  onLoad() {
-    this.initConversation();
-    this.setCurrentTime();
-
+  onLoad(options) {
     const userId = wx.getStorageSync('user_id');
-    
-    if (userId) {
-      this.setData({
-        userId: userId // Update data with the retrieved userId
-      });
-      // Fetch user info and calculate weekly progress when the page loads
-      // this.fetchUserData(userId);
-      // this.calculateWeeklyProgress(userId);
-      // calculateTotalProgress is removed as per requirements
-    } else {
-      wx.showToast({
-        title: '未找到用户ID，请重新登录',
-        icon: 'none',
-        duration: 2000
-      });
-      // Optionally navigate back to login page if userId is not found
-      // wx.redirectTo({
-      //   url: '/pages/login/login'
-      // });
+    if (!userId) {
+      wx.showToast({ title: '未找到用户ID，请重新登录', icon: 'none' });
+      wx.navigateBack();
+      return;
     }
+    this.setData({ userId: userId });
+    this.setCurrentTime();
     
+    // 【核心修改】在页面加载后，计算并设置滚动区域的高度
+    this.updateScrollViewHeight();
+
+    this.checkFollowupStatus();
+
+    // 【新增】监听键盘高度变化
+    wx.onKeyboardHeightChange(res => {
+      console.log('键盘高度变化:', res.height);
+      this.setData({
+        keyboardHeight: res.height
+      });
+      // 键盘弹起或收起时，都重新计算一次滚动区域高度并滚动到底部
+      this.updateScrollViewHeight();
+      this.scrollToBottomAnchor();
+    });
+
+    this.initRecord();
+    this.innerAudioContext = wx.createInnerAudioContext();
+    this.innerAudioContext.onError((res) => {
+        this.showErrorToast('语音播放失败');
+        console.error(res);
+    });
+  },
+
+  /**
+   * 【新增】初始化录音管理器
+   */
+  initRecord() {
+    // 识别结束事件
+    recorderManager.onStop = (res) => {
+      if (res.result) {
+        this.setData({
+          inputValue: this.data.inputValue + res.result,
+        });
+      } else {
+        this.showErrorToast('未能识别声音');
+      }
+    };
+
+    // 识别错误事件
+    recorderManager.onError = (res) => {
+      this.setData({ isRecording: false });
+      this.showErrorToast(`录音失败: ${res.msg}`);
+    };
+  },
+
+  /**
+   * 【新增】处理长按录音开始
+   */
+  handleRecordStart() {
+    this.setData({ isRecording: true });
+    recorderManager.start({
+      lang: 'zh_CN',
+    });
+  },
+
+  /**
+   * 【新增】处理松开按钮结束录音
+   */
+  handleRecordEnd() {
+    this.setData({ isRecording: false });
+    recorderManager.stop();
+  },
+
+  extractMainContent(text) {
+    const parts = text.split('---');
+    if (parts.length > 1) {
+      return parts[0].trim();
+    }
+    return text;
+  },
+
+  /**
+   * 【新增】文本转语音播放
+   */
+  handlePlayText(e) {
+    const text = e.currentTarget.dataset.text;
+    if (!text) return;
+
+    plugin.textToSpeech({
+      lang: "zh_CN",
+      tts: true,
+      content: this.extractMainContent(text),
+      success: (res) => {
+        if (res.retcode == 0) {
+          this.innerAudioContext.src = res.filename;
+          this.innerAudioContext.play();
+        } else {
+          this.showErrorToast('语音合成失败');
+          console.error("textToSpeech failed", res);
+        }
+      },
+      fail: (res) => {
+        this.showErrorToast('语音合成请求失败');
+        console.error("textToSpeech failed", res);
+      }
+    });
+  },
+
+  /**
+   * 【新增】一个独立的滚动到底部锚点的函数
+   */
+  scrollToBottomAnchor() {
+    wx.nextTick(() => {
+      this.setData({
+        intoView: 'chat-anchor'
+      });
+    });
+  },
+  
+  /**
+   * 【核心函数】动态计算并设置 scroll-view 的高度
+   */
+  updateScrollViewHeight() {
+    const query = wx.createSelectorQuery();
+    // 选择导航栏和输入栏
+    query.select('.nav-bar').boundingClientRect();
+    query.select('.input-bar').boundingClientRect();
+
+    query.exec((res) => {
+      // res 是一个包含查询结果的数组
+      if (res[0] && res[1]) {
+        const navBarHeight = res[0].height;
+        const inputBarHeight = res[1].height;
+        
+        // 获取屏幕可用高度
+        const screenHeight = wx.getWindowInfo().windowHeight;
+
+        // 计算 scroll-view 的高度
+        const scrollViewHeight = screenHeight - navBarHeight - inputBarHeight;
+
+        this.setData({
+          scrollViewHeight: scrollViewHeight
+        });
+        console.log(`[Debug] ScrollView height calculated and set to: ${scrollViewHeight}px`);
+      }
+    });
+  },
+
+  /**
+   * 【核心优化】使用 wx.nextTick 确保滚动到底部
+   */
+  addMessageToChat(message) {
+    let currentMessages = this.data.messages;
+    if (currentMessages.length >= MAX_MESSAGES_TO_RENDER) {
+      currentMessages = currentMessages.slice(-(MAX_MESSAGES_TO_RENDER - 1));
+    }
+    const newMessages = [...currentMessages, message];
+
+    this.setData({
+      messages: newMessages
+    }, () => {
+        // 在 setData 的回调中执行滚动，确保新消息已渲染
+        this.scrollToBottomAnchor();
+    });
+  },
+
+  // ... (其他函数 handleStartFollowup, handleSend, 等）
+  // --- 以下是其他函数的代码 ---
+  onShow() {
+    if (this.data.userId) {
+        this.checkFollowupStatus();
+    }
+  },
+
+  onUnload() {
+    if (this.data.conversationId && this.data.userId) {
+      console.log(`页面卸载，正在结束对话: ${this.data.conversationId}`);
+      wx.request({
+        url: `${this.data.backendBaseUrl}/consult/messages`,
+        method: 'POST',
+        data: {
+          user_id: this.data.userId,
+          conversation_id: this.data.conversationId,
+          message: "用户已退出页面",
+          mode: this.data.mode,
+          end_conversation: true
+        }
+      });
+    }
+    if (this.innerAudioContext) {
+      this.innerAudioContext.destroy();
+    }
+  },
+
+  checkFollowupStatus() {
+    if (this.data.isLoading) return;
+    wx.request({
+      url: `${this.data.backendBaseUrl}/users/check_followup_status`,
+      method: 'GET',
+      data: { user_id: this.data.userId },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          const { is_followup_week, has_completed_followup } = res.data;
+          if (is_followup_week && !has_completed_followup) {
+            this.setData({ showFollowupModal: true });
+          } else {
+            if (!this.data.conversationId && !this.data.isLoading) {
+              this.initConversation('consult');
+            }
+          }
+        } else {
+          if (!this.data.conversationId && !this.data.isLoading) {
+            this.initConversation('consult');
+          }
+        }
+      },
+      fail: () => {
+        if (!this.data.conversationId && !this.data.isLoading) {
+          this.initConversation('consult');
+        }
+      }
+    });
+  },
+  
+  handleStartFollowup() {
+    this.setData({ showFollowupModal: false, messages: [] });
+    this.initConversation('followup');
+  },
+  
+  handleDeclineFollowup() {
+    this.setData({ showFollowupModal: false, messages: [] });
+    this.initConversation('consult');
   },
 
   setCurrentTime() {
@@ -47,104 +263,82 @@ Page({
     });
   },
 
-  // 初始化对话
-  initConversation() {
-    this.setData({ isLoading: true });
-    
-    // 1. 尝试创建新对话
+  initConversation(mode) {
+    this.setData({ isLoading: true, mode: mode, isFollowupCompleted: false, conversationId: null, messages: [] });
+    this.addMessageToChat({ type: 'loading' });
     wx.request({
-      url: `${this.data.backendBaseUrl}/api/chat/conversations`,
-      method: 'POST',
-      data: { user_id: this.data.userId },
-      success: (res) => {
-        if (res.statusCode === 201) {
-          const conversationId = res.data.conversation_id;
-          this.setData({ conversationId });
-          
-          // 2. 获取初始问候语
-          this.getInitialGreeting(conversationId);
-        } else {
-          this.showErrorToast('初始化对话失败');
-        }
-      },
-      fail: (err) => {
-        console.error('创建对话失败:', err);
-        this.showErrorToast('网络错误');
-      },
-      complete: () => {
-        this.setData({ isLoading: false });
-      }
-    });
-  },
-
-  // 获取初始问候语
-  getInitialGreeting(conversationId) {
-    wx.request({
-      url: `${this.data.backendBaseUrl}/api/chat/conversations/${conversationId}/messages`,
+      url: `${this.data.backendBaseUrl}/consult/messages`,
       method: 'POST',
       data: {
         user_id: this.data.userId,
-        message: "你好"
+        message: "你好",
+        mode: mode,
+        end_conversation: false
       },
       success: (res) => {
-        if (res.statusCode === 200) {
+        this.removeLoadingMessage();
+        if (res.statusCode === 200 && res.data.response) {
+          this.setData({ conversationId: res.data.conversation_id, isLoading: false });
           this.addMessageToChat({
             sender_type: 'assistant',
             message_text: res.data.response,
             timestamp: res.data.timestamp
           });
+        } else {
+          this.showErrorToast('初始化对话失败');
         }
       },
-      fail: (err) => {
-        console.error('获取问候语失败:', err);
-      }
+      fail: () => {
+        this.removeLoadingMessage();
+        this.showErrorToast('网络错误');
+      },
     });
   },
 
-  // 处理输入
-  handleInput(e) {
-    this.setData({ inputValue: e.detail.value });
-  },
+  handleInput(e) { this.setData({ inputValue: e.detail.value }); },
 
-  // 发送消息
   handleSend() {
-    const { inputValue, conversationId } = this.data;
-    if (!inputValue.trim()) {
-      wx.showToast({ title: '消息不能为空', icon: 'none' });
-      return;
-    }
+    const { inputValue, conversationId, userId, mode, isFollowupCompleted } = this.data;
+    if (!inputValue.trim() || this.data.isLoading) return;
 
-    this.setData({ isLoading: true });
-    
-    // 1. 先添加用户消息到本地
     this.addMessageToChat({
       sender_type: 'user',
       message_text: inputValue,
       timestamp: new Date().toISOString()
     });
+    this.addMessageToChat({ type: 'loading' });
+    this.setData({ isLoading: true, inputValue: '' });
 
-    // 2. 发送到服务器
     wx.request({
-      url: `${this.data.backendBaseUrl}/api/chat/conversations/${conversationId}/messages`,
+      url: `${this.data.backendBaseUrl}/consult/messages`,
       method: 'POST',
       data: {
-        user_id: this.data.userId,
-        message: inputValue
+        user_id: userId,
+        conversation_id: conversationId,
+        message: inputValue,
+        mode: isFollowupCompleted ? 'consult' : mode,
+        end_conversation: false
       },
       success: (res) => {
-        if (res.statusCode === 200) {
+        this.removeLoadingMessage();
+        if (res.statusCode === 200 && res.data.response) {
+          if (res.data.conversation_id) {
+            this.setData({ conversationId: res.data.conversation_id });
+          }
           this.addMessageToChat({
             sender_type: 'assistant',
             message_text: res.data.response,
             timestamp: res.data.timestamp
           });
-          this.setData({ inputValue: '' });
+          if (res.data.followup_complete) {
+            this.handleFollowupCompletion(res.data.followup_results);
+          }
         } else {
           this.showErrorToast('发送失败');
         }
       },
-      fail: (err) => {
-        console.error('发送消息失败:', err);
+      fail: () => {
+        this.removeLoadingMessage();
         this.showErrorToast('网络错误');
       },
       complete: () => {
@@ -153,37 +347,45 @@ Page({
     });
   },
 
-  // 添加消息到聊天界面
-  addMessageToChat(message) {
-    this.setData({
-      messages: [...this.data.messages, message]
-    }, () => {
-      this.scrollToBottom();
-    });
-  },
-
-  // 滚动到底部
-  scrollToBottom() {
-    wx.nextTick(() => {
+  handleFollowupCompletion(results) {
+    if (results && results.scoring_result) {
+      this.setData({ isFollowupCompleted: true, mode: 'consult' });
+      wx.setStorageSync('is_follow_up_week', false)
+      this.addMessageToChat({ type: 'loading', message_text: '正在处理随访结果...' });
+      
       setTimeout(() => {
-        this.setData({
-          scrollTop: 99999 // 足够大的值确保滚动到底部
+        this.removeLoadingMessage();
+        this.addMessageToChat({
+          type: 'result',
+          data: results.scoring_result,
+          timestamp: new Date().toISOString()
         });
-      }, 300);
-    });
+      }, 15000);
+    }
   },
 
-  // 显示错误提示
+  removeLoadingMessage() {
+    const newMessages = this.data.messages.filter(msg => msg.type !== 'loading');
+    this.setData({ messages: newMessages });
+  },
+
   showErrorToast(message) {
-    wx.showToast({
-      title: message,
-      icon: 'none',
-      duration: 2000
-    });
+    wx.showToast({ title: message, icon: 'none', duration: 2000 });
   },
 
-  // 返回首页
   handleHome() {
-    wx.navigateBack();
+    if (this.data.mode === 'followup' && !this.data.isFollowupCompleted) {
+      wx.showModal({
+        title: '确认退出',
+        content: '随访尚未完成，现在退出将无法保存进度，确认要退出吗？',
+        success: (res) => {
+          if (res.confirm) {
+            wx.redirectTo({ url: '/pages/home/home' });
+          }
+        }
+      });
+    } else {
+      wx.redirectTo({ url: '/pages/home/home' });
+    }
   }
 });

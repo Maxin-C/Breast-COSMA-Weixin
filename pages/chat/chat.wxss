@@ -7,140 +7,136 @@ page {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* This makes the container fill the full viewport height */
+  height: 100vh;
+  box-sizing: border-box; /* 【新增】确保 padding 不会增加额外高度 */
+  transition: padding-bottom 0.3s ease-in-out; /* 【新增】让键盘弹出动画更平滑 */
 }
 
-/* 1. 自定义导航栏样式 */
+/* 1. Custom Navigation Bar - 【修改】移除 position: fixed */
 .nav-bar {
-  position: fixed; /* Fixed to the top */
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
   display: flex;
   align-items: center;
-  padding: 40px 15px 10px; /* 适配不同机型顶部安全距离 */
+  padding: 40px 15px 10px;
   background-color: #E0E8D7;
-  box-sizing: content-box; /* Padding adds to total height */
+  box-sizing: content-box;
 }
 
-.nav-back-icon {
-  width: 24px;
-  height: 24px;
-  margin-right: 10px;
-}
+.nav-back-icon { width: 24px; height: 24px; margin-right: 10px; }
+.nav-contact { display: flex; align-items: center; }
+.nav-avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
+.nav-contact-info { display: flex; flex-direction: column; }
+.nav-name { font-size: 16px; font-weight: 600; color: #333; }
+.nav-status { font-size: 12px; color: #6A8B51; }
 
-.nav-contact {
-  display: flex;
-  align-items: center;
-}
-
-.nav-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.nav-contact-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.nav-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.nav-status {
-  font-size: 12px;
-  color: #6A8B51;
-}
-
-/* 2. 聊天内容区样式 */
+/* 2. Chat Content Area - 【修改】移除 padding */
 .chat-body {
-  /* flex: 1; This is key: it makes the scroll-view take up all remaining vertical space */
-  height: 800px; /* Space for the fixed input-bar */
-  padding-bottom: 20px;
-  box-sizing: border-box; /* Crucial so padding is included in the flex item's height calculation */
-  position: relative; left: 0rpx; top: 164rpx; height: 1310rpx; display: block; box-sizing: border-box
+  flex: 1;
+  overflow-y: auto;
 }
 
-.time-tag {
-  text-align: center;
-  font-size: 12px;
-  color: #AAAAAA;
-  margin: 20px 0;
+.time-tag { text-align: center; font-size: 12px; color: #AAAAAA; margin: 20px 0; }
+.message-item { display: flex; margin: 0 15px 15px; }
+
+.message-item.received { justify-content: flex-start; }
+.message-item.received .message-bubble { background-color: #E0E8D7; border-radius: 18px 18px 18px 5px; position: relative; padding-right: 35px;}
+
+.message-item.sent { justify-content: flex-end; }
+.message-item.sent .message-bubble { background-color: #FFFFFF; border-radius: 18px 18px 5px 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+.message-bubble { padding: 10px 15px; max-width: 75%; }
+.message-content { font-size: 16px; line-height: 1.5; color: #333; word-break: break-all; }
+
+.speaker-icon {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  width: 23px;
+  height: 23px;
+  /* opacity: 0.7; */
 }
 
-.message-item {
-  display: flex;
-  margin: 0 15px 15px;
-}
+/* --- Loading Bubble Style --- */
+.loading-bubble { display: flex; align-items: center; justify-content: space-around; width: 60px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background-color: #6A8B51; animation: bounce 1.4s infinite ease-in-out both; }
+.dot:nth-child(1) { animation-delay: -0.32s; }
+.dot:nth-child(2) { animation-delay: -0.16s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
 
-/* 对方消息 (左对齐) */
-.message-item.received {
-  justify-content: flex-start;
-}
-.message-item.received .message-bubble {
-  background-color: #E0E8D7;
-  border-radius: 18px 18px 18px 5px;
-}
+/* --- Result Card Style --- */
+.result-card { display: flex; flex-direction: column; width: 100%; }
+.result-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 15px; text-align: center; }
+.result-table { width: 100%; border-collapse: collapse; }
+.table-header { display: flex; background-color: #f2f2f2; font-weight: 600; border-radius: 8px 8px 0 0; }
+.table-row { display: flex; border-bottom: 1px solid #eee; }
+.table-cell { flex: 1; padding: 10px; font-size: 14px; text-align: center; }
+.table-row:last-child { border-bottom: none; }
+.table-cell.score { font-weight: bold; color: #6A8B51; }
 
-/* 我的消息 (右对齐) */
-.message-item.sent {
-  justify-content: flex-end;
-}
-.message-item.sent .message-bubble {
-  background-color: #E0E0E0;
-  border-radius: 18px 18px 5px 18px;
-}
-
-.message-bubble {
-  display: inline-flex;
-  align-items: flex-end; /* 让时间戳和内容底对齐 */
-  padding: 10px 15px;
-  max-width: 75%;
-}
-
-.message-content {
-  font-size: 16px;
-  line-height: 1.5;
-  color: #333;
-  word-break: break-all; /* 英文长单词换行 */
-}
-
-.message-time {
-  font-size: 11px;
-  color: #888;
-  margin-left: 5px;
-  white-space: nowrap; /* 防止时间换行 */
-}
-
-/* 3. 底部输入栏样式 */
+/* 3. Bottom Input Bar - 【修改】移除 position: fixed */
 .input-bar {
-  position: fixed; /* Fixed to the bottom */
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column; /* 【修改】改为纵向排列 */
+  align-items: stretch; /* 【修改】拉伸子项以填充宽度 */
   padding: 10px 15px;
   background-color: #ffffff;
-  padding-bottom: env(safe-area-inset-bottom); /* 适配 iPhone X 等底部安全区域 */
+  border-top: 1px solid #EAEAEA;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+}
+
+.record-button {
+  background-color: #F0F2EF;
+  border-radius: 8px;
+  text-align: center;
+  padding: 8px 0;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 8px;
+  transition: background-color 0.2s;
+}
+
+.record-button:active {
+  background-color: #dcdedc;
+}
+
+.input-area {
+  display: flex;
+  flex-direction: row; /* 设置为水平排列 */
+  align-items: flex-end; /* 垂直方向底部对齐，以应对多行文本 */
+  width: 100%;
 }
 
 .input-field {
   flex: 1;
   background-color: #F0F2EF;
   border-radius: 20px;
-  padding: 8px 15px;
+  padding: 10px 15px;
   font-size: 15px;
+  line-height: 1.5;
   margin-right: 10px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.send-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-end;
+  height: 40px;
+  padding-left: 10px;
 }
 
 .send-icon {
   width: 28px;
   height: 28px;
 }
+
+/* 4. Modal Styles */
+.modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-container { background-color: #fff; width: 80%; border-radius: 16rpx; padding: 40rpx; box-sizing: border-box; }
+.modal-title { font-size: 36rpx; font-weight: bold; text-align: center; margin-bottom: 20rpx; }
+.modal-content { font-size: 28rpx; color: #666; margin-bottom: 40rpx; text-align: left; }
+.modal-actions { display: flex; justify-content: space-between; }
+.action-btn { flex: 1; margin: 0 10rpx; font-size: 30rpx; }
+.cancel-btn { background-color: #f0f0f0; color: #333; }
+.confirm-btn { background-color: #d8f1c3; color: #333; }

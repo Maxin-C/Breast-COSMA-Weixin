@@ -1,24 +1,18 @@
-<!-- pages/exercise/exercise.wxml -->
 <view class="container">
-  <!-- 导航栏 -->
   <view class="nav-bar">
     <image class="nav-back-icon" src="../../components/images/back-arrow.svg" mode="aspectFit" bind:tap="handleHome"></image>
     <view class="nav-title">上肢康复锻炼</view>
   </view>
 
-  <!-- 训练未开始时的界面 -->
-  <block wx:if="{{!isTrainingStarted}}">
-    <view class="start-screen">
-      <button class="start-button" bindtap="startTraining">开始训练</button>
+  <block wx:if="{{!isTrainingStarted && !isTrainingFinished}}">
+    <view class="initial-screen">
+      <text class="initial-message">{{initialMessage}}</text>
+      <button class="start-button" bindtap="startTraining">重新开始训练</button>
     </view>
   </block>
 
-  <!-- 训练开始后的界面 -->
-  <block wx:else>
-    <!-- 摄像头和视频的容器 -->
+  <block wx:if="{{!isTrainingFinished && isTrainingStarted}}">
     <view class="camera-video-wrapper" style="width: 100%; height: {{cameraHeight}}px;">
-      <!-- 摄像头组件 -->
-      <!-- 【修改】增加了 frame-size="medium" 来开启实时帧数据监听 -->
       <camera
         id="exerciseCamera"
         device-position="front"
@@ -29,7 +23,6 @@
         style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: {{isCameraVisibleForUser ? 2 : 0}}; opacity: {{isCameraVisibleForUser ? 1 : 0}};"
       ></camera>
 
-      <!-- 视频组件 -->
       <video
         id="exerciseVideo"
         class="exercise-video"
@@ -48,15 +41,20 @@
         wx:if="{{isPositioned && !isPaused}}"
       ></video>
 
-      <!-- 定位提示的覆盖层 -->
       <view class="camera-overlay" wx:if="{{isCameraVisibleForUser && !isPositioned}}">
         <text class="camera-prompt">请调整位置，将上半身放入摄像头范围内</text>
         <view class="guide-box"></view>
         <text class="camera-countdown">{{countdown}}s 后返回</text>
       </view>
+
+      <!-- 新增：实时反馈文本显示区域 -->
+      <view class="feedback-container" wx:if="{{feedbackText}}">
+        <image class="feedback-icon" src="../../components/images/voice-icon.svg"></image>
+        <text class="feedback-text">{{feedbackText}}</text>
+      </view>
+
     </view>
 
-    <!-- 控制器容器 -->
     <view class="controls-container" wx:if="{{isPositioned}}">
       <view class="progress-bar">
         <view class="progress-indicator" style="width: {{totalProgressPercentage}}%;"></view>
@@ -75,17 +73,53 @@
     </view>
   </block>
 
-  <!-- 加载提示 -->
-  <view wx:if="{{showLoading}}" class="loading-overlay">
-    <text class="loading-text">加载视频中...</text>
-  </view>
+  <block wx:if="{{isTrainingFinished}}">
+    <view class="report-container">
+      <view class="report-title">训练评估报告</view>
+      
+      <scroll-view scroll-y class="scores-list">
+        <view wx:for="{{evaluationResults}}" wx:for-item="result"  wx:key="exerciseId" class="score-item">
+          <view class="action-name">{{result.actionName}}</view>
+          <view class="star-rating">
+            <image 
+              wx:for="{{5}}" 
+              wx:key="index" 
+              class="star-icon" 
+              src="{{result.score / 2 > index ? (result.score / 2 >= index + 1 ? '../../components/images/star-full.svg' : '../../components/images/star-half.svg') : '../../components/images/star-empty.svg'}}"
+            ></image>
+            <text class="score-text">{{result.score}}分</text>
+          </view>
+        </view>
+      </scroll-view>
 
-  <!-- 【新增】用于将实时帧数据转换为图片的隐藏canvas -->
+      <view class="summary-container">
+        <view class="summary-title">综合评估</view>
+        <scroll-view scroll-y class="summary-content">
+          <block wx:if="{{isSummaryLoading}}">
+            <view class="loading-summary">
+              <view class="loading-spinner"></view>
+              <text>正在生成综合报告...</text>
+            </view>
+          </block>
+          <block wx:else>
+            <text>{{summaryReport}}</text>
+          </block>
+        </scroll-view>
+      </view>
+
+      <view class="chat-prompt-container">
+        <view class="chat-icon-wrapper" bindtap="redirectToChat">
+          <image class="chat-icon" src="../../components/images/chat-bubble.svg"></image>
+        </view>
+        <text class="chat-prompt-text">点击咨询，了解如何根据报告进行调整</text>
+      </view>
+    </view>
+  </block>
+
   <canvas type="2d" id="frameCanvas"
     style="width:{{frameCanvasWidth}}px; height:{{frameCanvasHeight}}px; position:absolute; left:-9999px; top:-9999px;">
   </canvas>
 
-  <!-- 用于雪碧图拼接的隐藏canvas -->
   <canvas type="2d" id="spriteSheetCanvas"
     style="width:{{spriteSheetCanvasWidth}}px; height:{{spriteSheetCanvasHeight}}px; position:absolute; left:-9999px; top:-9999px;">
   </canvas>
