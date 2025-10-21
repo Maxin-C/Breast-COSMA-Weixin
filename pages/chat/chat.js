@@ -279,9 +279,23 @@ Page({
         this.removeLoadingMessage();
         if (res.statusCode === 200 && res.data.response) {
           this.setData({ conversationId: res.data.conversation_id, isLoading: false });
+
+          const responseText = res.data.response;
+          const separator = "\n\n---\n**参考文献:**\n";
+          const parts = responseText.split(separator);
+          let messageText = responseText;
+          let referencesText = null;
+
+          if (parts.length > 1) {
+            messageText = parts[0];
+            referencesText = parts.slice(1).join('\n');
+          }
+
           this.addMessageToChat({
             sender_type: 'assistant',
-            message_text: res.data.response,
+            message_text: messageText, // 正文
+            references_text: referencesText, // 参考文献 (或 null)
+            full_text_for_tts: responseText, // 完整原文，用于TTS
             timestamp: res.data.timestamp
           });
         } else {
@@ -325,9 +339,22 @@ Page({
           if (res.data.conversation_id) {
             this.setData({ conversationId: res.data.conversation_id });
           }
+          const responseText = res.data.response;
+          const separator = "\n\n---\n**参考文献:**\n";
+          const parts = responseText.split(separator);
+          let messageText = responseText;
+          let referencesText = null;
+          
+          if (parts.length > 1) {
+            messageText = parts[0];
+            referencesText = parts.slice(1).join('\n');
+          }
+
           this.addMessageToChat({
             sender_type: 'assistant',
-            message_text: res.data.response,
+            message_text: messageText, // 正文
+            references_text: referencesText, // 参考文献 (或 null)
+            full_text_for_tts: responseText, // 完整原文，用于TTS
             timestamp: res.data.timestamp
           });
           if (res.data.followup_complete) {

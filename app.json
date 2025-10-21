@@ -27,7 +27,7 @@
   "lazyCodeLoading": "requiredComponents",
   "plugins": {
     "WechatSI": {
-      "version": "0.3.1",
+      "version": "0.3.6",
       "provider": "wx069ba97219f66d99"
     }
   }

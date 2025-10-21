@@ -23,18 +23,23 @@ scroll-into-view="{{intoView}}">
         <view wx:if="{{!item.type}}" class="message-item {{item.sender_type === 'user' ? 'sent' : 'received'}}">
           <view class="message-bubble">
             <text class="message-content">{{item.message_text}}</text>
+            
+            <text wx:if="{{item.references_text}}" class="message-references">
+              {{item.references_text}}
+            </text>
+            
             <image 
               wx:if="{{item.sender_type !== 'user'}}"
               class="speaker-icon" 
               src="../../components/images/speaker-icon.svg" 
               mode="aspectFit"
               bind:tap="handlePlayText"
-              data-text="{{item.message_text}}"
+              data-text="{{item.full_text_for_tts}}"
             ></image>
           </view>
         </view>
 
-                <view wx:if="{{item.type === 'loading'}}" class="message-item received">
+          <view wx:if="{{item.type === 'loading'}}" class="message-item received">
           <view class="message-bubble loading-bubble">
             <view class="dot"></view><view class="dot"></view><view class="dot"></view>
           </view>

@@ -44,7 +44,17 @@ page {
 .message-item.sent .message-bubble { background-color: #FFFFFF; border-radius: 18px 18px 5px 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
 .message-bubble { padding: 10px 15px; max-width: 75%; }
-.message-content { font-size: 16px; line-height: 1.5; color: #333; word-break: break-all; }
+.message-content { font-size: 16px; line-height: 1.5; color: #333; word-break: break-all; white-space: pre-wrap; display: block;}
+
+.message-references {
+  display: block; /* 确保独占一行 */
+  font-size: 13px; /* 字体更小 */
+  color: #888888; /* 灰色 */
+  line-height: 1.4;
+  word-break: break-all;
+  margin-top: 10px; /* 与正文拉开一点距离 */
+  white-space: pre-wrap; /* [关键] 保留参考文献中的换行符 */
+}
 
 .speaker-icon {
   position: absolute;

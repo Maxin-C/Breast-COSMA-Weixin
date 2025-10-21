@@ -103,6 +103,8 @@ Page({
   },
 
   handleLogin: function () {
-    wx.navigateBack();
+    wx.redirectTo({
+      url: `/pages/login/login`
+    });
   },
 });
