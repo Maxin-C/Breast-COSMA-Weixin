@@ -153,9 +153,7 @@ Page({
           });
       },
       initAudioPlayerWithCaching() {
-        const AUDIO_URL = `${
-this.data.backendBaseUrl}
-/static/audios/upper_guidance.mp3`;
+        const AUDIO_URL = `${this.data.backendBaseUrl}/static/audios/upper_guidance.mp3`;
         const STORAGE_KEY = 'cached_audio_path';
         const fs = wx.getFileSystemManager();
         const audioCtx = wx.createInnerAudioContext();
@@ -240,11 +238,7 @@ this.data.backendBaseUrl}
             return new Promise((resolve,
               reject) => {
               wx.request({
-                url: `${
-this.data.backendBaseUrl}
-/api/user_recovery_plans/${
-this.data.userId}
-`,
+                url: `${this.data.backendBaseUrl}/api/user_recovery_plans/${this.data.userId}`,
                 method: 'GET',
                 success: (res) => {
                   if (res.statusCode === 200 && res.data) {
@@ -271,41 +265,25 @@ this.data.userId}
             return new Promise((resolve,
               reject) => {
               wx.request({
-                url: `${
-this.data.backendBaseUrl}
-/user_recovery_plans/${
-this.data.userId}
-/exercises`,
+                url: `${this.data.backendBaseUrl}/user_recovery_plans/${this.data.userId}/exercises`,
                 method: 'GET',
                 success: (res) => {
                   if (res.statusCode === 200 && res.data && res.data.exercise_ids) {
                     const exerciseIds = res.data.exercise_ids;
                     const sequence = [];
                     let demonstrationCount = 0;
-                    const BASE_VIDEO_URL = `${
-this.data.backendBaseUrl}
-/static/videos/`;
+                    const BASE_VIDEO_URL = `${this.data.backendBaseUrl}/static/videos/`;
                     exerciseIds.forEach(id => {
                       sequence.push({
                         type: 'explanation',
-                        name: `动作${
-id}
-讲解`,
-                        url: `${
-BASE_VIDEO_URL}
-intro/${
-id}
-.mp4`,
+                        name: `动作${id}讲解`,
+                        url: `${BASE_VIDEO_URL}intro/${id}.mp4`,
                         exerciseNumber: id
                       });
                       sequence.push({
                         type: 'demonstration',
                         name: this.data.actionNameList[id],
-                        url: `${
-BASE_VIDEO_URL}
-guide/${
-id}
-.mp4`,
+                        url: `${BASE_VIDEO_URL}guide/${id}.mp4`,
                         exerciseNumber: id
                       });
                       demonstrationCount++;
@@ -342,9 +320,7 @@ id}
               return;
             }
             wx.request({
-              url: `${
-this.data.backendBaseUrl}
-/api/recovery_records/start`,
+              url: `${this.data.backendBaseUrl}/api/recovery_records/start`,
               method: 'POST',
               data: {
                 user_id: this.data.userId,
@@ -474,9 +450,7 @@ this.data.backendBaseUrl}
               isUploadingPositioningFrame: true
             });
             wx.uploadFile({
-              url: `${
-this.data.backendBaseUrl}
-/detect_upper_body`,
+              url: `${this.data.backendBaseUrl}/detect_upper_body`,
               filePath: imagePath,
               name: 'image',
               formData: {
@@ -527,9 +501,7 @@ this.data.backendBaseUrl}
               isUploadingContinuousFrame: true
             });
             wx.uploadFile({
-              url: `${
-this.data.backendBaseUrl}
-/detect_upper_body`,
+              url: `${this.data.backendBaseUrl}/detect_upper_body`,
               filePath: imagePath,
               name: 'image',
               success: (res) => {
@@ -655,9 +627,7 @@ this.data.backendBaseUrl}
               return;
             }
             wx.request({
-              url: `${
-this.data.backendBaseUrl}
-/api/process_exercise_video`,
+              url: `${this.data.backendBaseUrl}/api/process_exercise_video`,
               method: 'POST',
               data: {
                 record_id: recordId,
@@ -808,7 +778,7 @@ this.data.backendBaseUrl}
                 }
               });
             },
-            processAndEvaluateAction(exerciseId,
+            async processAndEvaluateAction(exerciseId,
               actionName) {
               return new Promise((resolve) => {
                 const recordId = this.data.currentRecordId;
@@ -817,9 +787,7 @@ this.data.backendBaseUrl}
                   return resolve();
                 }
                 wx.request({
-                  url: `${
-this.data.backendBaseUrl}
-/reports/evaluate`,
+                  url: `${this.data.backendBaseUrl}/reports/evaluate`,
                   method: 'POST',
                   data: {
                     record_id: recordId,
@@ -827,9 +795,7 @@ this.data.backendBaseUrl}
                   },
                   success: (res) => {
                     if (res.statusCode === 201 && res.data.success) {
-                      console.log(`动作 ${
-exerciseId}
- 评估成功`,
+                      console.log(`动作 ${exerciseId}评估成功`,
                         res.data.evaluation);
                       const evaluation = JSON.parse(res.data.evaluation);
                       const newResult = {
@@ -844,9 +810,7 @@ exerciseId}
                         ]
                       });
                     } else {
-                      console.error(`动作 ${
-exerciseId}
- 评估失败`,
+                      console.error(`动作 ${exerciseId}评估失败`,
                         res.data);
                       const newResult = {
                         exerciseId,
@@ -912,11 +876,7 @@ exerciseId}
                 isSummaryLoading: true
               });
               wx.request({
-                url: `${
-this.data.backendBaseUrl}
-/reports/${
-recordId}
-/summarize`,
+                url: `${this.data.backendBaseUrl}/reports/${recordId}/summarize`,
                 method: 'POST',
                 success: (res) => {
                   if (res.statusCode === 200 && res.data.success) {
@@ -1134,9 +1094,7 @@ recordId}
                     checkAllImagesLoadedAndDraw();
                   };
                   img.onerror = () => {
-                    console.error(`Failed to load image for sprite sheet: ${
-imagePath}
-`);
+                    console.error(`Failed to load image for sprite sheet: ${imagePath}`);
                     checkAllImagesLoadedAndDraw();
                   };
                   img.src = imagePath;
@@ -1150,9 +1108,7 @@ imagePath}
                 return;
               }
               wx.uploadFile({
-                url: `${
-this.data.backendBaseUrl}
-/reports/upload_sprites`,
+                url: `${this.data.backendBaseUrl}/reports/upload_sprites`,
                 filePath: spriteSheetPath,
                 name: 'files',
                 formData: {
@@ -1178,9 +1134,7 @@ this.data.backendBaseUrl}
                       this.isWaitingForFeedbackLock = false;
                     }
                   } else {
-                    console.error(`Sprite sheet upload failed with status ${
-res.statusCode}
-:`,
+                    console.error(`Sprite sheet upload failed with status ${res.statusCode}:`,
                       res.data);
                     this.isWaitingForFeedbackLock = false;
                   }
@@ -1196,8 +1150,9 @@ res.statusCode}
             },
             handleRealtimeFeedback: (function () {
               let timeoutId = null;
-              const debounceTime = 3000;
+              const debounceTime = 1000;
               return function (text) {
+                console.log(text)
                 if (timeoutId) {
                   clearTimeout(timeoutId);
                 }

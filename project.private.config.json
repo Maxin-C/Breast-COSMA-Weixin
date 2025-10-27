@@ -10,13 +10,6 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/temp/temp",
-          "pathName": "pages/temp/temp",
-          "query": "",
-          "scene": null,
-          "launchMode": "default"
-        },
-        {
           "name": "pages/signup/signup",
           "pathName": "pages/signup/signup",
           "query": "",

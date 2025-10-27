@@ -5,7 +5,7 @@
       <image class="nav-avatar" src="../../components/images/dr-cosma.png"></image>
       <view class="nav-contact-info">
         <text class="nav-name">COSMA康复小助手</text>
-        <text class="nav-status">在线</text>
+        <text class="nav-status">在线（AI内容生成）</text>
       </view>
     </view>
   </view>
@@ -92,5 +92,13 @@ scroll-into-view="{{intoView}}">
   </view>
 
   <view class="modal-mask" wx:if="{{ showFollowupModal }}">
+    <view class="modal-container">
+        <view class="modal-title">随访提醒</view>
+        <view class="modal-content">现在是您的随访周，需要开始进行术后随访评估吗？</view>
+        <view class="modal-actions">
+            <button class="action-btn cancel-btn" bindtap="handleDeclineFollowup">稍后提醒</button>
+            <button class="action-btn confirm-btn" bindtap="handleStartFollowup">开始随访</button>
+        </view>
+    </view>
       </view>
 </view>
