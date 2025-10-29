@@ -1,7 +1,4 @@
 // pages/exercise/exercise.js
-// 获取微信的语音合成插件
-const plugin = requirePlugin("WechatSI");
-// 获取App实例以访问全局数据
 const app = getApp();
 Page({
       data: {
@@ -65,6 +62,8 @@ Page({
         summaryReport: '',
         isSummaryLoading: true,
         isFeedbackThrottled: false,
+        // --- 新增 ---
+        feedbackPollTimer: null, // 反馈轮询计时器
       },
       isWaitingForFeedbackLock: false,
       onLoad() {
@@ -77,6 +76,23 @@ Page({
         this.data.cameraContext = wx.createCameraContext();
         this.initAudioPlayerWithCaching();
         this.initCameraListener();
+        this.innerAudioContext = wx.createInnerAudioContext();
+        this.innerAudioContext.onError((res) => {
+            this.setData({ isRecording: false });
+            this.showErrorToast('语音播放失败');
+            console.error(res);
+            this.isWaitingForFeedbackLock = false; // 异常时释放锁
+        });
+        // --- 新增：添加音频结束和停止的监听器 ---
+        this.innerAudioContext.onEnded(() => {
+          console.log("Feedback audio finished playing.");
+          this.isWaitingForFeedbackLock = false; // 释放锁
+        });
+        this.innerAudioContext.onStop(() => {
+          console.log("Feedback audio stopped.");
+          this.isWaitingForFeedbackLock = false; // 释放锁（例如被新反馈中断时）
+        });
+        // --- 结束新增 ---
         const userId = wx.getStorageSync('user_id');
         if (userId) {
           this.setData({
@@ -133,6 +149,8 @@ Page({
         this.data.cameraMonitoringInterval = null;
         this.data.elapsedTimeTimer = null;
         if (this.data.isCapturingAndSendingFrames) {
+          // --- 修改：停止轮询 ---
+          this.stopFeedbackPolling();
           this.stopSpriteSheetCaptureAndSend(false);
         }
         this.data.spriteFramesBuffer = [];
@@ -577,9 +595,11 @@ Page({
                   this.stopCameraMonitoring();
                   this.startElapsedTimeTimer();
                   this.startSpriteSheetCaptureAndSend();
+                  this.startFeedbackPolling(); // <-- 修改：开始轮询
                 } else {
                   this.stopElapsedTimeTimer();
                   this.stopSpriteSheetCaptureAndSend(false);
+                  this.stopFeedbackPolling(); // <-- 修改：停止轮询
                   if (!this.data.isPaused) {
                     this.startCameraMonitoring(this.sendFrameToBackendForContinuousCheck,
                       1000);
@@ -653,6 +673,7 @@ Page({
           },
           async onVideoEnded() {
               this.stopSpriteSheetCaptureAndSend(true);
+              this.stopFeedbackPolling(); // <-- 修改：停止轮询
               this.stopCameraMonitoring();
               this.stopElapsedTimeTimer();
               const finishedAction = this.data.actionSequence[this.data.currentActionIndex];
@@ -702,6 +723,7 @@ Page({
                     if (this.data.videoPlayer) this.data.videoPlayer.pause();
                     this.stopCameraMonitoring();
                     this.stopSpriteSheetCaptureAndSend(true);
+                    this.stopFeedbackPolling(); // <-- 修改：暂停时停止轮询
                     if (this.data.elapsedTimeTimer) clearInterval(this.data.elapsedTimeTimer);
                     this.setData({
                       isCameraVisibleForUser: true
@@ -720,6 +742,7 @@ Page({
                         if (currentAction && currentAction.type === 'demonstration') {
                           this.stopCameraMonitoring();
                           this.startSpriteSheetCaptureAndSend();
+                          this.startFeedbackPolling(); // <-- 修改：恢复时启动轮询
                         } else {
                           this.startCameraMonitoring(this.sendFrameToBackendForContinuousCheck,
                             1000);
@@ -771,6 +794,7 @@ Page({
                       () => {
                         if (this.data.videoPlayer) this.data.videoPlayer.stop();
                         this.stopCameraMonitoring();
+                        this.stopFeedbackPolling(); // <-- 修改：跳过时停止轮询
                         this.stopSpriteSheetCaptureAndSend(false);
                         this.stopElapsedTimeTimer();
                         this.updateOverallProgress();
@@ -853,7 +877,7 @@ Page({
             handleTrainingCompletion() {
               console.log("训练完成，正在停止所有摄像头活动...");
               this.stopFrameListener();
-              this.clearAllTimers();
+              this.clearAllTimers(); // clearAllTimers 会自动停止轮询
               this.setData({
                 isTrainingFinished: true
               });
@@ -864,6 +888,77 @@ Page({
               });
               this.fetchSummaryReport();
             },
+            
+            // --- 新增：开始轮询 ---
+            startFeedbackPolling() {
+              this.stopFeedbackPolling(); // 先停止任何已存在的计时器
+              console.log('Starting feedback polling...');
+              this.data.feedbackPollTimer = setInterval(() => {
+                this.pollForFeedback();
+              }, 3000); // 轮询间隔，例如 3 秒
+            },
+            
+            // --- 新增：停止轮询 ---
+            stopFeedbackPolling() {
+              if (this.data.feedbackPollTimer) {
+                console.log('Stopping feedback polling.');
+                clearInterval(this.data.feedbackPollTimer);
+                this.data.feedbackPollTimer = null;
+              }
+            },
+
+            // --- 新增：执行轮询的函数 ---
+            pollForFeedback() {
+              // 如果正在播放语音或等待反馈，则不发起新的轮询
+              if (this.isWaitingForFeedbackLock) {
+                console.log('Polling skipped: waiting for feedback lock.');
+                return;
+              }
+
+              const currentAction = this.data.actionSequence[this.data.currentActionIndex];
+              if (!currentAction || currentAction.type !== 'demonstration') {
+                // 如果当前不是演示动作（例如是讲解），则不轮询
+                return;
+              }
+              
+              const recordId = this.data.currentRecordId;
+              const exerciseId = currentAction.exerciseNumber;
+
+              console.log(`Polling for feedback: rec ${recordId}, ex ${exerciseId}`);
+              
+              wx.request({
+                url: `${this.data.backendBaseUrl}/reports/feedback`,
+                method: 'GET',
+                data: {
+                  record_id: recordId,
+                  exercise_id: exerciseId
+                },
+                success: (res) => {
+                  if (res.statusCode === 200 && res.data && res.data.feedback) {
+                    // 轮询到了新反馈！
+                    
+                    // 再次检查：防止在网络请求期间，动作已经切换
+                    const stillCurrentAction = this.data.actionSequence[this.data.currentActionIndex];
+                    const stillCurrentExerciseId = stillCurrentAction ? stillCurrentAction.exerciseNumber : null;
+
+                    if (res.data.exercise_id === stillCurrentExerciseId) {
+                      // 确认是当前动作的反馈
+                      console.log(`[Action ${exerciseId}] Polling received valid feedback.`);
+                      this.isWaitingForFeedbackLock = true;
+                      this.handleRealtimeFeedback(res.data.feedback);
+                    } else {
+                      // 否则，这是上一个动作的反馈，它来晚了，丢弃
+                      console.warn(`[Action ${stillCurrentExerciseId}] Polling discarded stale feedback for action ${res.data.exercise_id}.`);
+                    }
+                  }
+                  // 如果 res.data.feedback 为 null，则什么也不做，等待下一次轮询
+                },
+                fail: (err) => {
+                  console.error("Feedback polling request failed:", err);
+                }
+              });
+            },
+
             stopFrameListener() {
               if (this.data.cameraListener) {
                 this.data.cameraListener.stop();
@@ -1110,6 +1205,11 @@ Page({
                 console.log("Upload skipped: Paused.");
                 return;
               }
+
+              // --- 修改：在发起请求前，获取 *当前* 正在进行的动作ID ---
+              const currentAction = this.data.actionSequence[this.data.currentActionIndex];
+              const currentExerciseId = currentAction ? currentAction.exerciseNumber : null;
+
               wx.uploadFile({
                 url: `${this.data.backendBaseUrl}/reports/upload_sprites`,
                 filePath: spriteSheetPath,
@@ -1117,29 +1217,22 @@ Page({
                 formData: {
                   'exercise_id': actionCategory.toString(),
                   'record_id': this.data.currentRecordId.toString(),
-                  'elapsed_time': this.data.elapsedTime.toString(),
-                  // 传递锁的状态给后端        
-                  'is_waiting_for_feedback': this.isWaitingForFeedbackLock.toString()
+                  // --- 移除了 elapsed_time 和 is_waiting_for_feedback ---
                 },
                 success: (res) => {
                   if (res.statusCode === 201) {
-                    console.log('Sprite sheet uploaded successfully.');
+                    // 上传成功，什么也不做。反馈由 pollForFeedback 处理
+                    console.log(`Sprite sheet for ex ${currentExerciseId} uploaded.`);
+                    /*
                     try {
-                      const data = JSON.parse(res.data);
-                      if (data && data.feedback) {
-                        // 收到反馈，设置锁，并进行处理              
-                        this.isWaitingForFeedbackLock = true;
-                        this.handleRealtimeFeedback(data.feedback);
-                      }
+                      // --- 移除所有反馈处理逻辑 ---
                     } catch (e) {
-                      console.error('Error parsing feedback response:',
-                        e);
-                      this.isWaitingForFeedbackLock = false;
+                      console.error('Error parsing upload response:', e);
                     }
+                    */
                   } else {
                     console.error(`Sprite sheet upload failed with status ${res.statusCode}:`,
                       res.data);
-                    this.isWaitingForFeedbackLock = false;
                   }
                 },
                 fail: (err) => {
@@ -1147,71 +1240,86 @@ Page({
                     err);
                 },
                 complete: () => {
-                  this.isWaitingForFeedbackLock = false;
+                  // 锁的释放完全由 handleRealtimeFeedback 控制，这里什么都不做
                 }
               });
             },
             handleRealtimeFeedback: (function () {
               let timeoutId = null;
               const debounceTime = 1000;
-              return function (text) {
-                console.log(text)
+
+              // 这是将被返回的防抖处理函数
+              const debouncedHandler = function (text) {
+                // 'this' 在这个函数内部将指向 Page 实例
+                const page = this; 
+
                 if (timeoutId) {
                   clearTimeout(timeoutId);
                 }
+
                 timeoutId = setTimeout(() => {
                     if (!text || text.trim() === "") {
-                      this.isWaitingForFeedbackLock = false;
+                      // 文本为空或空白，释放锁
+                      page.isWaitingForFeedbackLock = false; 
                       return;
                     }
+
                     if (text.includes("未找到可分析的动作图片")) {
                       text = "请您跟着视频一起锻炼吧";
                     } else if (text.toLowerCase().includes("error") || text.includes("失败") || text.includes("错误")) {
-                      console.error("Received error feedback from backend:",
-                        text);
-                      this.isWaitingForFeedbackLock = false;
-                      return;
-                      // 不显示不播报        
+                      console.error("Received error feedback from backend:", text);
+                      // 反馈是错误信息，释放锁并且不播报
+                      page.isWaitingForFeedbackLock = false; 
+                      return; // 不显示不播报        
                     }
-                    this.setData({
+
+                    // 在UI上设置反馈文本
+                    page.setData({
                       feedbackText: text
                     });
-                    plugin.textToSpeech({
-                      lang: "zh_CN",
-                      tts: true,
-                      content: text,
-                      success: (res) => {
-                        const innerAudioContext = wx.createInnerAudioContext();
-                        innerAudioContext.autoplay = true;
-                        innerAudioContext.src = res.filename;
-                        innerAudioContext.onPlay(() => console.log('开始播放反馈语音'));
-                        innerAudioContext.onError((res) => {
-                          console.error('播放失败',
-                            res.errMsg);
-                          this.isWaitingForFeedbackLock = false;
-                        });
-                        innerAudioContext.onEnded(() => {
-                          console.log('反馈语音播放结束');
-                          this.isWaitingForFeedbackLock = false;
-                          setTimeout(() => {
-                              if (this.data.feedbackText === text) {
-                                this.setData({
-                                  feedbackText: ''
-                                });
-                              }
-                            },
-                            1500);
-                        });
+
+                    // 请求TTS语音合成
+                    wx.request({
+                      url: `${page.data.backendBaseUrl}/consult/tts`, 
+                      method: 'POST',
+                      data: {
+                        text: text
                       },
-                      fail: (res) => {
-                        console.error("语音合成失败",
-                          res);
-                        this.isWaitingForFeedbackLock = false;
+                      success: (res) => {
+                        wx.hideLoading();
+                        if (res.statusCode === 200 && res.data.audio_url) {
+                          const fullAudioUrl = page.data.backendBaseUrl + res.data.audio_url;
+                          console.log('Playing audio from URL:', fullAudioUrl);
+              
+                          // 停止上一个可能在播放的音频，并播放新的
+                          page.innerAudioContext.stop(); 
+                          page.innerAudioContext.src = fullAudioUrl;
+                          page.innerAudioContext.play();
+              
+                          // 关键：锁 *不会* 在这里释放。
+                          // 它将由我们在 onLoad 中绑定的 'onEnded', 'onStop', 
+                          // 或 'onError' 监听器来释放。
+                        } else {
+                          // TTS 服务返回了错误
+                          page.showErrorToast('语音合成失败');
+                          console.error("Backend TTS request failed", res);
+                          page.isWaitingForFeedbackLock = false; // TTS失败，释放锁
+                        }
+                      },
+                      fail: (err) => {
+                        // TTS 请求期间发生网络错误
+                        wx.hideLoading();
+                        page.showErrorToast('语音请求失败');
+                        console.error("Backend TTS request error", err);
+                        page.isWaitingForFeedbackLock = false; // TTS请求失败，释放锁
                       }
                     });
                   },
                   debounceTime);
               };
+
+              // 返回这个防抖处理函数
+              return debouncedHandler;
             })(),
 
             onCameraError(e) {

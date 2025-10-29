@@ -49,7 +49,7 @@
 
       <!-- 新增：实时反馈文本显示区域 -->
       <view class="feedback-container" wx:if="{{feedbackText}}">
-        <image class="feedback-icon" src="../../components/images/voice-icon.svg"></image>
+        <!-- <image class="feedback-icon" src="../../components/images/voice-icon.svg"></image> -->
         <text class="feedback-text">{{feedbackText}}</text>
       </view>
 
