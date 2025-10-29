@@ -25,6 +25,10 @@ Page({
         icon: 'none',
         duration: 2000
       });
+      wx.redirectTo({ // 使用 redirectTo 清除当前页面栈
+        url: '/pages/login/login'
+      });
+      return;
     }
   },
 

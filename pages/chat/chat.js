@@ -25,7 +25,9 @@ Page({
     const userId = wx.getStorageSync('user_id');
     if (!userId) {
       wx.showToast({ title: '未找到用户ID，请重新登录', icon: 'none' });
-      wx.navigateBack();
+      wx.redirectTo({ // 使用 redirectTo 清除当前页面栈
+        url: '/pages/login/login'
+      });
       return;
     }
     this.setData({ userId: userId });
@@ -50,6 +52,7 @@ Page({
     this.initRecord();
     this.innerAudioContext = wx.createInnerAudioContext();
     this.innerAudioContext.onError((res) => {
+        this.setData({ isRecording: false });
         this.showErrorToast('语音播放失败');
         console.error(res);
     });
@@ -110,22 +113,37 @@ Page({
     const text = e.currentTarget.dataset.text;
     if (!text) return;
 
-    plugin.textToSpeech({
-      lang: "zh_CN",
-      tts: true,
-      content: this.extractMainContent(text),
+    const contentToSynthesize = this.extractMainContent(text);
+    if (!contentToSynthesize) {
+      this.showErrorToast('没有可播放的内容');
+      return;
+    }
+    wx.showLoading({ title: '正在合成语音...' });
+
+    wx.request({
+      url: `${this.data.backendBaseUrl}/consult/tts`, 
+      method: 'POST',
+      data: {
+        text: contentToSynthesize
+      },
       success: (res) => {
-        if (res.retcode == 0) {
-          this.innerAudioContext.src = res.filename;
+        wx.hideLoading();
+        if (res.statusCode === 200 && res.data.audio_url) {
+          const fullAudioUrl = this.data.backendBaseUrl + res.data.audio_url;
+          console.log('Playing audio from URL:', fullAudioUrl);
+
+          this.innerAudioContext.src = fullAudioUrl;
           this.innerAudioContext.play();
+
         } else {
           this.showErrorToast('语音合成失败');
-          console.error("textToSpeech failed", res);
+          console.error("Backend TTS request failed", res);
         }
       },
-      fail: (res) => {
-        this.showErrorToast('语音合成请求失败');
-        console.error("textToSpeech failed", res);
+      fail: (err) => {
+        wx.hideLoading();
+        this.showErrorToast('语音请求失败');
+        console.error("Backend TTS request error", err);
       }
     });
   },

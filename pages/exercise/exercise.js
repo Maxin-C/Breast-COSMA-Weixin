@@ -90,6 +90,9 @@ Page({
             duration: 2000
           });
           this.returnToInitialStage('加载失败，请返回重试。');
+          wx.redirectTo({
+            url: '/pages/login/login'
+          });
         }
       },
       onReady() {
