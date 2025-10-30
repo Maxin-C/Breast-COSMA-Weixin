@@ -64,6 +64,8 @@ Page({
         isFeedbackThrottled: false,
         // --- 新增 ---
         feedbackPollTimer: null, // 反馈轮询计时器
+
+        evaluationPromises: [],
       },
       isWaitingForFeedbackLock: false,
       onLoad() {
@@ -354,6 +356,7 @@ Page({
                       isTrainingStarted: true,
                       isTrainingFinished: false,
                       evaluationResults: [],
+                      evaluationPromises: [],
                       summaryReport: '',
                     },
                     () => {
@@ -570,6 +573,7 @@ Page({
               currentActionIndex: 0,
               totalProgressPercentage: 0,
               completedDemonstrationVideos: 0,
+              evaluationPromises: [],
               videoPlayer: null,
               isCapturingAndSendingFrames: false,
             });
@@ -673,13 +677,18 @@ Page({
           },
           async onVideoEnded() {
               this.stopSpriteSheetCaptureAndSend(true);
-              this.stopFeedbackPolling(); // <-- 修改：停止轮询
+              this.stopFeedbackPolling(); 
               this.stopCameraMonitoring();
               this.stopElapsedTimeTimer();
               const finishedAction = this.data.actionSequence[this.data.currentActionIndex];
               if (finishedAction && finishedAction.type === 'demonstration') {
-                await this.processAndEvaluateAction(finishedAction.exerciseNumber,
-                  finishedAction.name);
+                
+                const evaluationPromise = this.processAndEvaluateAction(
+                  finishedAction.exerciseNumber,
+                  finishedAction.name
+                );
+                this.data.evaluationPromises.push(evaluationPromise);
+
                 this.setData({
                   completedDemonstrationVideos: this.data.completedDemonstrationVideos + 1
                 });
@@ -874,12 +883,23 @@ Page({
                 });
               });
             },
-            handleTrainingCompletion() {
+            async handleTrainingCompletion() {
               console.log("训练完成，正在停止所有摄像头活动...");
               this.stopFrameListener();
-              this.clearAllTimers(); // clearAllTimers 会自动停止轮询
+              this.clearAllTimers(); 
+
+              wx.showLoading({ title: '正在生成评估...' });
+              try {
+                await Promise.all(this.data.evaluationPromises);
+                console.log("所有评估已完成。");
+              } catch (err) {
+                console.error("评估过程中出现错误: ", err);
+              }
+              wx.hideLoading();
+
               this.setData({
-                isTrainingFinished: true
+                isTrainingFinished: true,
+                evaluationPromises: []
               });
               this.data.evaluationResults.sort((a,
                 b) => a.exerciseId - b.exerciseId);
